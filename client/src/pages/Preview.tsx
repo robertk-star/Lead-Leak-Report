@@ -368,12 +368,12 @@ export default function Preview() {
         </Card>
 
         <Card className="bg-white border border-[#e5e7eb] p-8">
-          <h3 className="font-bold text-[#1a2332] mb-4">About Build 2C</h3>
+          <h3 className="font-bold text-[#1a2332] mb-4">About Build 2D</h3>
           <p className="text-[#374151] mb-4">
-            This build improves the preview analyzer after real-site testing. It better separates basic review proof from strong review proof, handles phone numbers found only in page data more carefully, and avoids saying reviews are missing when stars or testimonials are visible.
+            This build improves finding priority after real-site testing. It now treats a weak or buried phone path as a higher-priority issue than softer trust-proof improvements, while still separating basic review proof from stronger review proof with a visible source/count.
           </p>
           <p className="text-[#374151] mb-4">
-            The next build should add screenshot/mobile first-screen checks so the preview can verify what appears above the fold before adding AI-generated full reports, Stripe, PDF generation, or a database.
+            The next build should add screenshot/mobile first-screen checks so the preview can verify exactly what appears above the fold before adding AI-generated full reports, Stripe, PDF generation, or a database.
           </p>
           <p className="text-sm text-[#6b7280]"><strong>Disclaimer:</strong> This preview is an informational website review. It does not guarantee rankings, traffic, calls, or revenue.</p>
         </Card>

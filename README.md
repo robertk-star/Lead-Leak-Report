@@ -1,12 +1,12 @@
 # Lead Leak Report
 
-Phase: **Build 2C — Review Proof + Phone Prominence Fixes**
+Phase: **Build 2D — Finding Priority + Phone Path Emphasis**
 
 This is still a Vite/React prototype, not a Next.js app.
 
-Build 2C is a scoring-quality update based on real-site testing. It does not add payments, PDFs, databases, or AI. The goal is to make the free preview more accurate when a site has basic review proof, hidden/non-prominent phone signals, and decent-but-not-elite conversion paths.
+Build 2D is a scoring-quality update based on real-site testing. It does not add payments, PDFs, databases, or AI. The goal is to make the free preview prioritize the most important home-service conversion issue first, especially when a site has a decent estimate CTA but a weak or buried phone path.
 
-## What Build 2C includes
+## What Build 2D includes
 
 - Multi-niche landing page foundation.
 - Business type selector.
@@ -48,6 +48,9 @@ Build 2C is a scoring-quality update based on real-site testing. It does not add
 - Review proof is now separated into basic review proof vs. strong review proof with source/count.
 - Phone numbers found only in page HTML/data are now treated as a possible prominence issue instead of a full call-readiness pass.
 - The analyzer should no longer say reviews are missing when stars or testimonials are visible.
+- Phone number prominence now outranks softer review-count/source findings.
+- A phone found late in the extracted homepage content is treated as a weaker call path, not a full first-screen call path.
+- Added a finding for “Estimate CTA is visible, but the call path is weaker.”
 
 ## What this build does not include yet
 
@@ -75,7 +78,7 @@ Do not use Next.js for this version.
 
 ## Environment variables
 
-Recommended for Build 2C:
+Recommended for Build 2D:
 
 ```txt
 FIRECRAWL_API_KEY=your_firecrawl_api_key
@@ -91,7 +94,7 @@ If no Firecrawl key is set, the app still runs using the basic homepage fetch fr
 
 ## SQL migration
 
-None required for Build 2C.
+None required for Build 2D.
 
 ## Local commands
 

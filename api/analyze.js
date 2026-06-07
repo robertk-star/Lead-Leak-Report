@@ -44,11 +44,17 @@ function buildPreviewFromScrape({ url, cityState, email, industryId, html, visib
   const lower = visibleContent.toLowerCase();
   const city = String(cityState || "").split(",")[0]?.trim().toLowerCase() || "";
 
-  const hasPhoneVisible = phonePattern.test(visibleContent);
+  const phoneMatch = visibleContent.match(phonePattern);
+  const phoneIndex = phoneMatch?.index ?? -1;
+  const hasPhoneVisible = phoneIndex >= 0;
   const hasPhoneInHtml = phonePattern.test(html);
   const hasTelLink = /href=["']tel:/i.test(html);
   const hasPhone = hasPhoneVisible || (hasTelLink && hasPhoneInHtml) || hasPhoneInHtml;
   const phoneMayBeHidden = hasPhoneInHtml && !hasPhoneVisible;
+  // Build 2D: a phone number buried in the footer/contact area is not the same as a first-screen call path.
+  // Firecrawl reads the whole homepage, so we use the phone's position in the extracted text as a practical prominence signal.
+  const phoneAppearsLate = hasPhoneVisible && phoneIndex > 1400;
+  const hasPhoneProminent = hasPhoneVisible && phoneIndex <= 1400;
   const primaryCount = countMatches(visibleContent, industry.primaryKeywords);
   const serviceCount = countMatches(visibleContent, industry.serviceKeywords);
   const urgentCount = countMatches(visibleContent, industry.urgentKeywords);
@@ -71,9 +77,10 @@ function buildPreviewFromScrape({ url, cityState, email, industryId, html, visib
   const hasFamilyLocalProof = /(family owned|locally owned|local, family|years in business|since\s+\d{4}|serving .+ since)/i.test(visibleContent);
 
   let callScore = 0;
-  if (hasPhone) callScore += 11;
-  if (hasTelLink) callScore += 8;
-  if (strongCtaCount > 0) callScore += 4;
+  if (hasPhone) callScore += 8;
+  if (hasPhoneProminent) callScore += 5;
+  if (hasTelLink) callScore += 7;
+  if (strongCtaCount > 0) callScore += 3;
   else if (softCtaCount > 0) callScore += 2;
   if (urgentCount > 0) callScore += 2;
 
@@ -122,7 +129,7 @@ function buildPreviewFromScrape({ url, cityState, email, industryId, html, visib
   freshnessScore = Math.max(0, Math.min(10, freshnessScore));
 
   const categories = [
-    category("call", "Call Readiness", callScore, 25, hasPhone ? (phoneMayBeHidden ? "Phone was found in page data, but may not be prominent in visible page text." : hasTelLink ? "Phone and click-to-call found." : "Phone found, but click-to-call was not confirmed.") : "Phone number not found in homepage content."),
+    category("call", "Call Readiness", callScore, 25, hasPhone ? (!hasPhoneProminent ? "Phone was found, but not near the start of the scanned homepage content." : hasTelLink ? "Prominent phone and click-to-call found." : "Prominent phone found, but click-to-call was not confirmed.") : "Phone number not found in homepage content."),
     category("clarity", "5-Second Service Clarity", clarityScore, 20, primaryCount > 0 ? "Industry wording found." : "Main service wording was not confirmed."),
     category("trust", "Trust Proof", trustScore, 20, hasStrongReviewProof ? "Strong review proof was found." : hasBasicReviewProof || hasCertificationProof ? "Some trust proof was found, but the source/count may be limited." : "Trust proof appears thin, linked-only, or buried."),
     category("path", "Request Path", requestScore, 15, hasBrokenCta ? "A possible broken/placeholder link was detected." : formFieldCount > 6 ? `Form may be high-friction with ${formFieldCount} fields.` : strongCtaCount > 0 ? "Strong request path language found." : "Request path has basic or soft signals."),
@@ -141,13 +148,15 @@ function buildPreviewFromScrape({ url, cityState, email, industryId, html, visib
       evidence: "No standard U.S. phone number pattern was found in the homepage HTML/text.",
       fix: ["Add a phone number to the header.", "Make the number click-to-call.", "Add a mobile call button for urgent visitors."],
     });
-  } else if (phoneMayBeHidden) {
+  } else if (!hasPhoneProminent) {
     findings.push({
-      title: "Phone number may not be prominent in the first-screen experience",
+      title: "Phone number is not visible near the top",
       severity: "warning",
       category: "Call Readiness",
-      explanation: `A ${industry.label.toLowerCase()} site can have a phone number somewhere in the page data but still make visitors hunt for it. The preview found a phone signal, but it was not confirmed in the clean visible page text.`,
-      evidence: "Phone pattern was found in page HTML/data, but not confirmed in the primary visible text extracted for the preview.",
+      explanation: `The site appears to have a phone number somewhere, but it was not found near the start of the scanned homepage content. A ${industry.label.toLowerCase()} visitor who prefers to call may have to hunt for it instead of seeing a clear call option next to the main request button.`,
+      evidence: phoneMayBeHidden
+        ? "Phone pattern was found in page HTML/data, but not confirmed in the clean visible text."
+        : `Phone pattern was first found around character ${phoneIndex} of the extracted homepage text, which usually means it is not part of the first-screen/header experience.`,
       fix: ["Put the phone number in the main header.", "Add a mobile sticky Call Now button.", "Keep Request Estimate and Call Now visible together."],
     });
   } else if (!hasTelLink) {
@@ -158,6 +167,17 @@ function buildPreviewFromScrape({ url, cityState, email, industryId, html, visib
       explanation: "Mobile visitors may have to copy/paste or manually dial instead of tapping once to call.",
       evidence: "A phone number was found, but the scan did not find an href=\"tel:\" link.",
       fix: ["Add a tel: link to every visible phone number.", "Use a clear 'Call Now' button.", "Test it on iPhone and Android."],
+    });
+  }
+
+  if (hasPhone && !hasPhoneProminent && strongCtaCount > 0) {
+    findings.push({
+      title: "Estimate CTA is visible, but the call path is weaker",
+      severity: "warning",
+      category: "Call Readiness",
+      explanation: `The page appears to have a request/estimate action, but the phone path is not as obvious. Some ${industry.customerLabel || "visitors"} will want to call instead of filling out a form.`,
+      evidence: "Strong CTA wording was found, but the phone number was not confirmed near the top of the scanned homepage content.",
+      fix: ["Place 'Call Now' beside the estimate button.", "Make the phone number click-to-call.", "Use both call and request options on mobile."],
     });
   }
 
@@ -208,6 +228,7 @@ function buildPreviewFromScrape({ url, cityState, email, industryId, html, visib
   const rawScore = categories.reduce((sum, category) => sum + category.score, 0);
   let finalScore = Math.max(25, Math.min(99, rawScore));
   if (!hasPhone) finalScore = Math.min(finalScore, 69);
+  if (hasPhone && !hasPhoneProminent) finalScore = Math.min(finalScore, 82);
   if (hasPhone && !hasTelLink) finalScore = Math.min(finalScore, 79);
   if (hasBrokenCta) finalScore = Math.min(finalScore, 64);
   if (!hasBasicReviewProof) finalScore = Math.min(finalScore, 82);
