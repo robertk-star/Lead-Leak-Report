@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { industries, type IndustryId } from "@/data/industries";
-import { ArrowRight } from "lucide-react";
+import { buildFallbackPreview } from "@/lib/localPreview";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useLocation } from "wouter";
 
@@ -17,16 +18,56 @@ export default function LeadCheckForm({ defaultIndustryId = "roofing", compact =
   const [cityState, setCityState] = useState("");
   const [email, setEmail] = useState("");
   const [industryId, setIndustryId] = useState<IndustryId>(defaultIndustryId);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    const params = new URLSearchParams({
-      industry: industryId,
-      url: websiteUrl.trim(),
-      location: cityState.trim(),
-      email: email.trim(),
-    });
-    setLocation(`/preview?${params.toString()}`);
+
+    const trimmedUrl = websiteUrl.trim();
+    const trimmedCityState = cityState.trim();
+    const trimmedEmail = email.trim();
+
+    if (!trimmedUrl || !trimmedCityState || !trimmedEmail) return;
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          url: trimmedUrl,
+          cityState: trimmedCityState,
+          email: trimmedEmail,
+          industryId,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error || "The live preview could not read this site yet.");
+      }
+
+      const result = await response.json();
+      sessionStorage.setItem("leadLeakPreviewResult", JSON.stringify(result));
+      sessionStorage.removeItem("leadLeakPreviewError");
+      setLocation("/preview");
+    } catch (error) {
+      const fallback = buildFallbackPreview({
+        url: trimmedUrl,
+        cityState: trimmedCityState,
+        email: trimmedEmail,
+        industryId,
+      });
+      sessionStorage.setItem("leadLeakPreviewResult", JSON.stringify(fallback));
+      sessionStorage.setItem(
+        "leadLeakPreviewError",
+        error instanceof Error ? error.message : "The live preview could not run.",
+      );
+      setLocation("/preview");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -81,9 +122,18 @@ export default function LeadCheckForm({ defaultIndustryId = "roofing", compact =
         </div>
         <Button
           type="submit"
-          className="w-full bg-[#d97706] hover:bg-[#b45309] text-white font-bold text-base py-6 transition-all hover:shadow-lg"
+          disabled={isSubmitting}
+          className="w-full bg-[#d97706] hover:bg-[#b45309] text-white font-bold text-base py-6 transition-all hover:shadow-lg disabled:opacity-70"
         >
-          Check My Website <ArrowRight className="ml-2" size={18} />
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 animate-spin" size={18} /> Checking Website...
+            </>
+          ) : (
+            <>
+              Check My Website <ArrowRight className="ml-2" size={18} />
+            </>
+          )}
         </Button>
         <p className="text-xs text-[#6b7280] text-center">
           Free preview first. Paid report only recommended if we find meaningful issues.

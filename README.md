@@ -1,10 +1,10 @@
 # Lead Leak Report
 
-Phase: **Build 2 — Firecrawl-Ready Site Reading**
+Phase: **Build 2A — Fixed Preview Submission Flow**
 
 This is still a Vite/React prototype, not a Next.js app.
 
-## What Build 2 includes
+## What Build 2A includes
 
 - Multi-niche landing page foundation.
 - Business type selector.
@@ -19,6 +19,9 @@ This is still a Vite/React prototype, not a Next.js app.
 - Serverless analyzer route at `/api/analyze`.
 - **Firecrawl-first homepage reading when `FIRECRAWL_API_KEY` is available.**
 - Basic fetch fallback if Firecrawl is not configured or temporarily fails.
+- Fixed form submission flow: the form now runs `/api/analyze` before opening `/preview`.
+- Analyzer results are stored in `sessionStorage` so `/preview` displays the real result instead of relying on query-string values.
+- Direct visits to `/preview` now show a clean empty state instead of a fake fallback score.
 - Rule-based category scoring:
   - Call Readiness
   - 5-Second Service Clarity
@@ -33,7 +36,7 @@ This is still a Vite/React prototype, not a Next.js app.
   - Paid report not recommended yet
 - Foundational local SEO preview section.
 - “Send This to Your Web Person” checklist preview.
-- Fallback preview if the live site cannot be read.
+- Fallback preview only after a real submitted site cannot be read.
 
 ## What this build does not include yet
 
@@ -61,7 +64,7 @@ Do not use Next.js for this version.
 
 ## Environment variables
 
-Recommended for Build 2:
+Recommended for Build 2A:
 
 ```txt
 FIRECRAWL_API_KEY=your_firecrawl_api_key
@@ -73,11 +76,11 @@ Optional fallback name also supported:
 FIRECRAWL_API_TOKEN=your_firecrawl_api_key
 ```
 
-If no Firecrawl key is set, the app still runs using the basic homepage fetch from Build 1B.
+If no Firecrawl key is set, the app still runs using the basic homepage fetch from Build 1B/2.
 
 ## SQL migration
 
-None required for Build 2.
+None required for Build 2A.
 
 ## Local commands
 

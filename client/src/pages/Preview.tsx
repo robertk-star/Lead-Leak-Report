@@ -68,25 +68,45 @@ export default function Preview() {
   const industryId = params.get("industry") || "roofing";
 
   const [result, setResult] = useState<PreviewResult | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
 
-    async function runPreview() {
-      setLoading(true);
+    async function loadPreview() {
+      setHasAttemptedLoad(false);
       setError(null);
 
-      const fallback = buildFallbackPreview({ url, cityState, email, industryId });
+      const stored = sessionStorage.getItem("leadLeakPreviewResult");
+      const storedError = sessionStorage.getItem("leadLeakPreviewError");
+
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored) as PreviewResult;
+          if (!cancelled) {
+            setResult(parsed);
+            setError(storedError);
+            setHasAttemptedLoad(true);
+          }
+          return;
+        } catch {
+          sessionStorage.removeItem("leadLeakPreviewResult");
+          sessionStorage.removeItem("leadLeakPreviewError");
+        }
+      }
 
       if (!url || !cityState || !email) {
         if (!cancelled) {
-          setResult(fallback);
-          setLoading(false);
+          setResult(null);
+          setHasAttemptedLoad(true);
         }
         return;
       }
+
+      setLoading(true);
+      const fallback = buildFallbackPreview({ url, cityState, email, industryId });
 
       try {
         const response = await fetch("/api/analyze", {
@@ -95,27 +115,38 @@ export default function Preview() {
           body: JSON.stringify({ url, cityState, email, industryId }),
         });
 
-        if (!response.ok) throw new Error("The live preview could not read this site yet.");
+        if (!response.ok) {
+          const payload = await response.json().catch(() => null);
+          throw new Error(payload?.error || "The live preview could not read this site yet.");
+        }
 
         const data = (await response.json()) as PreviewResult;
+        sessionStorage.setItem("leadLeakPreviewResult", JSON.stringify(data));
+        sessionStorage.removeItem("leadLeakPreviewError");
         if (!cancelled) setResult(data);
       } catch (err) {
+        const message = err instanceof Error ? err.message : "The live preview could not run.";
+        sessionStorage.setItem("leadLeakPreviewResult", JSON.stringify(fallback));
+        sessionStorage.setItem("leadLeakPreviewError", message);
         if (!cancelled) {
           setResult(fallback);
-          setError(err instanceof Error ? err.message : "The live preview could not run.");
+          setError(message);
         }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setHasAttemptedLoad(true);
+        }
       }
     }
 
-    runPreview();
+    loadPreview();
     return () => {
       cancelled = true;
     };
   }, [url, cityState, email, industryId]);
 
-  if (loading || !result) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-[#f9fafb]">
         <SiteHeader />
@@ -129,6 +160,28 @@ export default function Preview() {
       </div>
     );
   }
+
+  if (hasAttemptedLoad && !result) {
+    return (
+      <div className="min-h-screen bg-[#f9fafb]">
+        <SiteHeader />
+        <div className="container py-16">
+          <Card className="max-w-2xl mx-auto p-8 text-center border border-[#e5e7eb]">
+            <FileText className="mx-auto mb-4 text-[#d97706]" size={40} />
+            <h1 className="text-2xl font-bold text-[#1a2332] mb-3">Run a website check first</h1>
+            <p className="text-[#374151] mb-6">
+              No preview result was found. Enter a website, business type, city/state, and email from the homepage or an industry page to generate a real preview.
+            </p>
+            <Button onClick={() => setLocation("/")} className="bg-[#d97706] hover:bg-[#b45309] text-white font-bold">
+              Start Website Check
+            </Button>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (!result) return null;
 
   const scoreColor = result.score >= 85 ? "text-green-600" : result.score >= 70 ? "text-[#d97706]" : result.score >= 50 ? "text-yellow-600" : "text-red-600";
   const recommendationBox = getRecommendationBox(result);
@@ -315,9 +368,9 @@ export default function Preview() {
         </Card>
 
         <Card className="bg-white border border-[#e5e7eb] p-8">
-          <h3 className="font-bold text-[#1a2332] mb-4">About Build 2</h3>
+          <h3 className="font-bold text-[#1a2332] mb-4">About Build 2A</h3>
           <p className="text-[#374151] mb-4">
-            This build adds Firecrawl-ready site reading while keeping the current rule-based multi-niche preview. If FIRECRAWL_API_KEY is set in Vercel, the analyzer uses Firecrawl first and falls back to the basic reader if needed.
+            This build fixes the preview submission flow. Forms now run the analyzer first, store the real result in sessionStorage, and then open the preview page. Visiting /preview directly now shows a clean empty state instead of a fake fallback score.
           </p>
           <p className="text-[#374151] mb-4">
             The next build should add screenshot/mobile first-screen checks before adding AI-generated full reports, Stripe, PDF generation, or a database.
