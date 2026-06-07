@@ -80,7 +80,7 @@ function buildCategory(key: string, label: string, score: number, max: number, n
 function paidRecommendationFrom(score: number, findings: PreviewFinding[], confidence: PreviewResult["confidence"]): PreviewResult["paidRecommendation"] {
   const criticalCount = findings.filter((finding) => finding.severity === "critical").length;
   const warningCount = findings.filter((finding) => finding.severity === "warning").length;
-  if (criticalCount >= 1 || warningCount >= 3 || score < 78) return "recommended";
+  if (criticalCount >= 1 || warningCount >= 3 || score < 78 || (warningCount >= 2 && score < 85)) return "recommended";
   if (confidence === "Basic preview") return "manual-review";
   return "not-recommended";
 }
@@ -205,17 +205,27 @@ export function buildPreviewFromScrape(params: {
   const serviceCount = countMatches(text, industry.serviceKeywords);
   const urgentCount = countMatches(text, industry.urgentKeywords);
   const trustCount = countMatches(text, industry.trustKeywords);
-  const ctaCount = countMatches(text, industry.ctaKeywords);
+  const strongCtaCount = countMatches(text, industry.ctaKeywords);
+  const softCtaCount = countMatches(text, ["free consultation", "contact us", "contact", "learn more", "request information"]);
+  const ctaCount = strongCtaCount + softCtaCount;
   const localSeoCount = countMatches(text, industry.localSeoKeywords);
   const hasCity = city.length > 1 && lower.includes(city);
   const hasCurrentYear = lower.includes("2026") || lower.includes("2025");
   const hasStaleYear = lower.includes("2020") || lower.includes("2021") || lower.includes("2022");
   const formFieldCount = (params.html.match(/<(input|textarea|select)\b/gi) || []).length;
 
+  const hasBrokenCta = /href=["']\s*(#|<>|javascript:void\(0\)|javascript:;|\s*)["']/i.test(params.html);
+  const hasVisibleReviewProof = /(\d+[,+]?\s*(?:5[- ]?star|reviews?)|[45]\.\d\s*(?:\/5)?\s*(?:stars?|google)|★★★★★|google rating|star rating|bbb\s*a\+|best of)/i.test(text);
+  const hasCertificationProof = /(gaf|owens corning|certainteed|iko|tamko|master elite|select shinglemaster|preferred contractor|licensed|insured|bonded|warranty|guarantee)/i.test(text);
+  const hasProjectProof = /(before\s*(?:&|and)?\s*after|recent projects?|project photos?|portfolio|our work|gallery)/i.test(text);
+  const hasWeakReviewLinkOnly = /(client reviews|reviews|testimonials)/i.test(text) && !hasVisibleReviewProof;
+  const hasFamilyLocalProof = /(family owned|locally owned|local, family|years in business|since\s+\d{4}|serving .+ since)/i.test(text);
+
   let callScore = 0;
-  if (hasPhone) callScore += 10;
-  if (hasTelLink) callScore += 9;
-  if (ctaCount > 0) callScore += 4;
+  if (hasPhone) callScore += 11;
+  if (hasTelLink) callScore += 8;
+  if (strongCtaCount > 0) callScore += 4;
+  else if (softCtaCount > 0) callScore += 2;
   if (urgentCount > 0) callScore += 2;
 
   let clarityScore = 0;
@@ -226,25 +236,28 @@ export function buildPreviewFromScrape(params: {
   if (params.title && hasAny(params.title, industry.primaryKeywords)) clarityScore += 2;
 
   let trustScore = 0;
-  if (trustCount >= 4) trustScore += 14;
-  else if (trustCount >= 2) trustScore += 10;
-  else if (trustCount === 1) trustScore += 5;
-  if (/gallery|portfolio|project|before|after|photo/i.test(text)) trustScore += 3;
-  if (/review|testimonial|stars?|google rating/i.test(text)) trustScore += 3;
+  if (hasVisibleReviewProof) trustScore += 7;
+  else if (hasWeakReviewLinkOnly) trustScore += 2;
+  if (hasCertificationProof) trustScore += 6;
+  if (hasProjectProof) trustScore += 3;
+  if (hasFamilyLocalProof) trustScore += 2;
+  if (trustCount >= 4) trustScore += 2;
 
   let requestScore = 0;
-  if (ctaCount > 0) requestScore += 7;
-  if (/contact|form|quote|estimate|schedule|book/i.test(text)) requestScore += 4;
+  if (strongCtaCount > 0) requestScore += 7;
+  else if (softCtaCount > 0) requestScore += 4;
+  if (/contact|form|quote|estimate|schedule|book|consultation/i.test(text)) requestScore += 3;
   if (formFieldCount > 0 && formFieldCount <= 6) requestScore += 3;
   if (formFieldCount === 0) requestScore += 1;
   if (formFieldCount > 6) requestScore -= 4;
+  if (hasBrokenCta) requestScore = Math.min(requestScore, 5);
 
   let localSeoScore = 0;
   if (hasCity) localSeoScore += 3;
   if (localSeoCount >= 2) localSeoScore += 3;
   else if (localSeoCount === 1) localSeoScore += 1;
   if (serviceCount >= 3) localSeoScore += 2;
-  if (/service area|areas served|nearby|county|neighborhood|zip/i.test(text)) localSeoScore += 2;
+  if (/service area|areas served|nearby|county|neighborhood|zip|surrounding areas/i.test(text)) localSeoScore += 2;
 
   let freshnessScore = 5;
   if (hasCurrentYear) freshnessScore += 3;
@@ -261,8 +274,8 @@ export function buildPreviewFromScrape(params: {
   const categories = [
     buildCategory("call", "Call Readiness", callScore, 25, hasPhone ? (hasTelLink ? "Phone and click-to-call found." : "Phone found, but click-to-call was not confirmed.") : "Phone number not found in homepage content."),
     buildCategory("clarity", "5-Second Service Clarity", clarityScore, 20, primaryCount > 0 ? "Industry wording found." : "Main service wording was not confirmed."),
-    buildCategory("trust", "Trust Proof", trustScore, 20, trustCount >= 2 ? "Some trust wording found." : "Trust proof appears thin or buried."),
-    buildCategory("path", "Request Path", requestScore, 15, formFieldCount > 6 ? `Form may be high-friction with ${formFieldCount} fields.` : "Request path has basic signals."),
+    buildCategory("trust", "Trust Proof", trustScore, 20, hasVisibleReviewProof || hasCertificationProof ? "Some real trust proof was found." : "Trust proof appears thin, linked-only, or buried."),
+    buildCategory("path", "Request Path", requestScore, 15, hasBrokenCta ? "A possible broken/placeholder link was detected." : formFieldCount > 6 ? `Form may be high-friction with ${formFieldCount} fields.` : strongCtaCount > 0 ? "Strong request path language found." : "Request path has basic or soft signals."),
     buildCategory("seo", "Local Visibility", localSeoScore, 10, hasCity ? "City/service-area signal found." : "City/service-area signal not confirmed."),
     buildCategory("freshness", "Freshness", freshnessScore, 10, hasCurrentYear ? "Current year signal found." : hasStaleYear ? "Older dates found without a current year signal." : "Freshness signal was limited."),
   ];
@@ -320,18 +333,45 @@ export function buildPreviewFromScrape(params: {
     });
   }
 
-  if (trustCount < 2) {
+  if (!hasVisibleReviewProof && !hasCertificationProof) {
     findings.push({
-      title: "Trust proof appears thin or buried",
+      title: "Trust proof is not strongly visible in the preview",
       severity: "warning",
       category: "Trust Proof",
-      explanation: "The scan found limited reviews, certifications, warranty, licensing, or testimonial language on the homepage.",
-      evidence: `Only ${trustCount} trust keyword(s) were found from the preview list.`,
+      explanation: "The scan did not confirm strong proof such as star ratings, review count, BBB/certification badges, warranty, licensing, or insurance language. A reviews link alone is weaker than proof visible on the page.",
+      evidence: hasWeakReviewLinkOnly ? "Review/testimonial wording was found, but no star rating, review count, or certification proof was confirmed." : `Only ${trustCount} trust keyword(s) were found from the preview list.`,
       fix: ["Add a review or star-rating block near the top.", "Show licenses, insurance, warranties, or certifications.", "Add recent project proof or testimonials."],
+    });
+  } else if (!hasVisibleReviewProof) {
+    findings.push({
+      title: "Reviews or star ratings are not clearly visible",
+      severity: "warning",
+      category: "Trust Proof",
+      explanation: "The scan found some credibility signals, but did not confirm visible customer proof like a Google rating, star rating, or review count.",
+      evidence: "Certification/warranty/local proof may exist, but review proof was not confirmed in the homepage scan.",
+      fix: ["Place a Google rating or review count near the first screen.", "Add 2–3 short customer quotes.", "Link the review block to the full review page."],
     });
   }
 
-  if (ctaCount === 0) {
+  if (hasBrokenCta) {
+    findings.push({
+      title: "Possible broken or placeholder CTA link detected",
+      severity: "critical",
+      category: "Request Path",
+      explanation: "A main action link that points nowhere can stop a ready visitor from contacting the business.",
+      evidence: "The scan detected a placeholder link pattern such as href='#', href='', href='<>' or javascript:void(0).",
+      fix: ["Test every button in the header and hero section.", "Send the main CTA to a real quote/contact form.", "Use a clear action such as 'Get a Free Estimate' or 'Schedule Service'."],
+    });
+  } else if (strongCtaCount === 0 && softCtaCount > 0) {
+    findings.push({
+      title: "CTA is present but could be more specific",
+      severity: "warning",
+      category: "Request Path",
+      explanation: "The page has a contact/consultation path, but the wording may be softer than a direct service request. Specific action buttons usually make the next step clearer.",
+      evidence: "Soft CTA wording was found, but the strongest industry-specific CTA terms were not confirmed.",
+      fix: [`Use wording like '${industry.ctaKeywords[0]}' near the top.`, "Repeat the CTA after trust proof sections.", "Tell visitors what happens after they submit."],
+    });
+  } else if (ctaCount === 0) {
     findings.push({
       title: "No strong call-to-action found",
       severity: "warning",
@@ -397,8 +437,18 @@ export function buildPreviewFromScrape(params: {
     });
   }
 
-  const score = categories.reduce((sum, category) => sum + category.score, 0);
-  const finalScore = Math.max(25, Math.min(99, score));
+  const rawScore = categories.reduce((sum, category) => sum + category.score, 0);
+  let finalScore = Math.max(25, Math.min(99, rawScore));
+
+  // Build 2B guardrails: do not let text-heavy pages score as elite unless they confirm the actual conversion basics.
+  if (!hasPhone) finalScore = Math.min(finalScore, 69);
+  if (hasPhone && !hasTelLink) finalScore = Math.min(finalScore, 79);
+  if (hasBrokenCta) finalScore = Math.min(finalScore, 64);
+  if (!hasVisibleReviewProof) finalScore = Math.min(finalScore, 82);
+  if (trustScore < 10) finalScore = Math.min(finalScore, 80);
+  if (strongCtaCount === 0) finalScore = Math.min(finalScore, 82);
+  if (trustScore < 10 && strongCtaCount === 0) finalScore = Math.min(finalScore, 78);
+
   const paidRecommendation = paidRecommendationFrom(finalScore, findings, "Live homepage preview");
   const localSeoGaps = [
     hasCity ? "City/service area was found in the scanned content." : "Add the main city or service area to the homepage headline or opening section.",
