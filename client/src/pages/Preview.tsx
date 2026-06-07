@@ -46,7 +46,7 @@ function getRecommendationBox(result: PreviewResult) {
   if (result.paidRecommendation === "manual-review") {
     return {
       title: "Manual review recommended before charging",
-      body: "The live preview could not verify enough site content. Build 2 should add Firecrawl before asking this visitor to pay.",
+      body: "The live preview could not verify enough site content. A manual review or stronger screenshot/mobile check should run before asking this visitor to pay.",
       tone: "border-yellow-400",
       button: "Paid Report Disabled",
     };
@@ -368,12 +368,12 @@ export default function Preview() {
         </Card>
 
         <Card className="bg-white border border-[#e5e7eb] p-8">
-          <h3 className="font-bold text-[#1a2332] mb-4">About Build 2A</h3>
+          <h3 className="font-bold text-[#1a2332] mb-4">About Build 2C</h3>
           <p className="text-[#374151] mb-4">
-            This build fixes the preview submission flow. Forms now run the analyzer first, store the real result in sessionStorage, and then open the preview page. Visiting /preview directly now shows a clean empty state instead of a fake fallback score.
+            This build improves the preview analyzer after real-site testing. It better separates basic review proof from strong review proof, handles phone numbers found only in page data more carefully, and avoids saying reviews are missing when stars or testimonials are visible.
           </p>
           <p className="text-[#374151] mb-4">
-            The next build should add screenshot/mobile first-screen checks before adding AI-generated full reports, Stripe, PDF generation, or a database.
+            The next build should add screenshot/mobile first-screen checks so the preview can verify what appears above the fold before adding AI-generated full reports, Stripe, PDF generation, or a database.
           </p>
           <p className="text-sm text-[#6b7280]"><strong>Disclaimer:</strong> This preview is an informational website review. It does not guarantee rankings, traffic, calls, or revenue.</p>
         </Card>

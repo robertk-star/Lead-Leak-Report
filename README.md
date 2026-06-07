@@ -1,12 +1,12 @@
 # Lead Leak Report
 
-Phase: **Build 2B — More Accurate Scoring + Critical Leak Guardrails**
+Phase: **Build 2C — Review Proof + Phone Prominence Fixes**
 
 This is still a Vite/React prototype, not a Next.js app.
 
-Build 2B is a scoring-quality update. It does not add payments, PDFs, databases, or AI. The goal is to make the free preview more honest: decent sites should not be called critical, but they also should not score 90+ unless they show phone, click-to-call, strong CTA, trust proof, local clarity, and no major request-path issues.
+Build 2C is a scoring-quality update based on real-site testing. It does not add payments, PDFs, databases, or AI. The goal is to make the free preview more accurate when a site has basic review proof, hidden/non-prominent phone signals, and decent-but-not-elite conversion paths.
 
-## What Build 2B includes
+## What Build 2C includes
 
 - Multi-niche landing page foundation.
 - Business type selector.
@@ -44,6 +44,10 @@ Build 2B is a scoring-quality update. It does not add payments, PDFs, databases,
 - Softer handling for sites that are decent but still missing first-screen trust proof.
 - Stronger detection for weak trust proof, soft CTAs, placeholder links, and high-friction forms.
 - Updated recommendation logic so a site with multiple meaningful warnings can still justify a paid report even if it is not critical.
+- Better review/star detection, including star symbols and “Read More Reviews” style signals.
+- Review proof is now separated into basic review proof vs. strong review proof with source/count.
+- Phone numbers found only in page HTML/data are now treated as a possible prominence issue instead of a full call-readiness pass.
+- The analyzer should no longer say reviews are missing when stars or testimonials are visible.
 
 ## What this build does not include yet
 
@@ -71,7 +75,7 @@ Do not use Next.js for this version.
 
 ## Environment variables
 
-Recommended for Build 2B:
+Recommended for Build 2C:
 
 ```txt
 FIRECRAWL_API_KEY=your_firecrawl_api_key
@@ -87,7 +91,7 @@ If no Firecrawl key is set, the app still runs using the basic homepage fetch fr
 
 ## SQL migration
 
-None required for Build 2B.
+None required for Build 2C.
 
 ## Local commands
 

@@ -26,34 +26,49 @@ const paidRecommendationFrom = (score, findings, confidence) => {
 const recommendationText = (rec, industry) => rec === "recommended" ? `This preview found enough possible issues to justify a deeper ${industry.label.toLowerCase()} Lead Leak Report if the business wants exact fixes.` : rec === "manual-review" ? "The automated preview could not read enough of the site to make a confident paid-report recommendation. A manual review or Firecrawl scan should be used before charging." : "The preview did not find enough meaningful issues to confidently recommend a paid report. That no-sale rule protects trust.";
 const checklist = (industry) => ["Make the main phone number click-to-call on mobile.", `Make the first headline clearly say ${industry.primaryKeywords[0]} and the main city/service area.`, `Add a clear ${industry.ctaKeywords[0]} button near the top of the page.`, "Add visible reviews, star ratings, or testimonials near the top.", "Add local project photos or service-area proof.", "Shorten forms to 4–5 fields where possible."];
 
-function buildPreviewFromScrape({ url, cityState, email, industryId, html, title = "", description = "", finalUrl }) {
+function stripHtmlForVisibleText(html = "") {
+  return String(html)
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function buildPreviewFromScrape({ url, cityState, email, industryId, html, visibleText = "", title = "", description = "", finalUrl }) {
   const industry = getIndustryById(industryId);
   const normalizedUrl = finalUrl || normalizeUrl(url);
-  const text = `${title || ""} ${description || ""} ${html}`;
-  const lower = text.toLowerCase();
+  const visibleContent = `${title || ""} ${description || ""} ${visibleText || stripHtmlForVisibleText(html)}`;
+  const text = `${visibleContent} ${html}`;
+  const lower = visibleContent.toLowerCase();
   const city = String(cityState || "").split(",")[0]?.trim().toLowerCase() || "";
 
-  const hasPhone = phonePattern.test(text);
+  const hasPhoneVisible = phonePattern.test(visibleContent);
+  const hasPhoneInHtml = phonePattern.test(html);
   const hasTelLink = /href=["']tel:/i.test(html);
-  const primaryCount = countMatches(text, industry.primaryKeywords);
-  const serviceCount = countMatches(text, industry.serviceKeywords);
-  const urgentCount = countMatches(text, industry.urgentKeywords);
-  const trustCount = countMatches(text, industry.trustKeywords);
-  const strongCtaCount = countMatches(text, industry.ctaKeywords);
-  const softCtaCount = countMatches(text, ["free consultation", "contact us", "contact", "learn more", "request information"]);
+  const hasPhone = hasPhoneVisible || (hasTelLink && hasPhoneInHtml) || hasPhoneInHtml;
+  const phoneMayBeHidden = hasPhoneInHtml && !hasPhoneVisible;
+  const primaryCount = countMatches(visibleContent, industry.primaryKeywords);
+  const serviceCount = countMatches(visibleContent, industry.serviceKeywords);
+  const urgentCount = countMatches(visibleContent, industry.urgentKeywords);
+  const trustCount = countMatches(visibleContent, industry.trustKeywords);
+  const strongCtaCount = countMatches(visibleContent, industry.ctaKeywords);
+  const softCtaCount = countMatches(visibleContent, ["free consultation", "contact us", "contact", "learn more", "request information"]);
   const ctaCount = strongCtaCount + softCtaCount;
-  const localSeoCount = countMatches(text, industry.localSeoKeywords);
+  const localSeoCount = countMatches(visibleContent, industry.localSeoKeywords);
   const hasCity = city.length > 1 && lower.includes(city);
   const hasCurrentYear = lower.includes("2026") || lower.includes("2025");
   const hasStaleYear = lower.includes("2020") || lower.includes("2021") || lower.includes("2022");
   const formFieldCount = (html.match(/<(input|textarea|select)\b/gi) || []).length;
 
   const hasBrokenCta = /href=["']\s*(#|<>|javascript:void\(0\)|javascript:;|\s*)["']/i.test(html);
-  const hasVisibleReviewProof = /(\d+[,+]?\s*(?:5[- ]?star|reviews?)|[45]\.\d\s*(?:\/5)?\s*(?:stars?|google)|★★★★★|google rating|star rating|bbb\s*a\+|best of)/i.test(text);
-  const hasCertificationProof = /(gaf|owens corning|certainteed|iko|tamko|master elite|select shinglemaster|preferred contractor|licensed|insured|bonded|warranty|guarantee)/i.test(text);
-  const hasProjectProof = /(before\s*(?:&|and)?\s*after|recent projects?|project photos?|portfolio|our work|gallery)/i.test(text);
-  const hasWeakReviewLinkOnly = /(client reviews|reviews|testimonials)/i.test(text) && !hasVisibleReviewProof;
-  const hasFamilyLocalProof = /(family owned|locally owned|local, family|years in business|since\s+\d{4}|serving .+ since)/i.test(text);
+  const hasStrongReviewProof = /(\d+[,+]?\s*(?:5[- ]?star|reviews?)|[45]\.\d\s*(?:\/5)?\s*(?:stars?|google)|google rating|star rating|best of)/i.test(visibleContent);
+  const hasBasicReviewProof = hasStrongReviewProof || /(?:★\s*){4,5}|(?:⭐\s*){4,5}|read more reviews|client reviews|customer reviews|testimonial|testimonials/i.test(visibleContent);
+  const hasCertificationProof = /(gaf|owens corning|certainteed|iko|tamko|master elite|select shinglemaster|preferred contractor|licensed|insured|bonded|warranty|guarantee|bbb\s*a\+)/i.test(visibleContent);
+  const hasProjectProof = /(before\s*(?:&|and)?\s*after|recent projects?|project photos?|portfolio|our work|gallery)/i.test(visibleContent);
+  const hasWeakReviewLinkOnly = /(client reviews|reviews|testimonials)/i.test(visibleContent) && !hasBasicReviewProof;
+  const hasFamilyLocalProof = /(family owned|locally owned|local, family|years in business|since\s+\d{4}|serving .+ since)/i.test(visibleContent);
 
   let callScore = 0;
   if (hasPhone) callScore += 11;
@@ -70,7 +85,8 @@ function buildPreviewFromScrape({ url, cityState, email, industryId, html, title
   if (title && hasAny(title, industry.primaryKeywords)) clarityScore += 2;
 
   let trustScore = 0;
-  if (hasVisibleReviewProof) trustScore += 7;
+  if (hasStrongReviewProof) trustScore += 8;
+  else if (hasBasicReviewProof) trustScore += 5;
   else if (hasWeakReviewLinkOnly) trustScore += 2;
   if (hasCertificationProof) trustScore += 6;
   if (hasProjectProof) trustScore += 3;
@@ -106,9 +122,9 @@ function buildPreviewFromScrape({ url, cityState, email, industryId, html, title
   freshnessScore = Math.max(0, Math.min(10, freshnessScore));
 
   const categories = [
-    category("call", "Call Readiness", callScore, 25, hasPhone ? (hasTelLink ? "Phone and click-to-call found." : "Phone found, but click-to-call was not confirmed.") : "Phone number not found in homepage content."),
+    category("call", "Call Readiness", callScore, 25, hasPhone ? (phoneMayBeHidden ? "Phone was found in page data, but may not be prominent in visible page text." : hasTelLink ? "Phone and click-to-call found." : "Phone found, but click-to-call was not confirmed.") : "Phone number not found in homepage content."),
     category("clarity", "5-Second Service Clarity", clarityScore, 20, primaryCount > 0 ? "Industry wording found." : "Main service wording was not confirmed."),
-    category("trust", "Trust Proof", trustScore, 20, hasVisibleReviewProof || hasCertificationProof ? "Some real trust proof was found." : "Trust proof appears thin, linked-only, or buried."),
+    category("trust", "Trust Proof", trustScore, 20, hasStrongReviewProof ? "Strong review proof was found." : hasBasicReviewProof || hasCertificationProof ? "Some trust proof was found, but the source/count may be limited." : "Trust proof appears thin, linked-only, or buried."),
     category("path", "Request Path", requestScore, 15, hasBrokenCta ? "A possible broken/placeholder link was detected." : formFieldCount > 6 ? `Form may be high-friction with ${formFieldCount} fields.` : strongCtaCount > 0 ? "Strong request path language found." : "Request path has basic or soft signals."),
     category("seo", "Local Visibility", localSeoScore, 10, hasCity ? "City/service-area signal found." : "City/service-area signal not confirmed."),
     category("freshness", "Freshness", freshnessScore, 10, hasCurrentYear ? "Current year signal found." : hasStaleYear ? "Older dates found without a current year signal." : "Freshness signal was limited."),
@@ -124,6 +140,15 @@ function buildPreviewFromScrape({ url, cityState, email, industryId, html, title
       explanation: `A local ${industry.label.toLowerCase()} customer should be able to call quickly. The scan did not find a phone number in the homepage content.`,
       evidence: "No standard U.S. phone number pattern was found in the homepage HTML/text.",
       fix: ["Add a phone number to the header.", "Make the number click-to-call.", "Add a mobile call button for urgent visitors."],
+    });
+  } else if (phoneMayBeHidden) {
+    findings.push({
+      title: "Phone number may not be prominent in the first-screen experience",
+      severity: "warning",
+      category: "Call Readiness",
+      explanation: `A ${industry.label.toLowerCase()} site can have a phone number somewhere in the page data but still make visitors hunt for it. The preview found a phone signal, but it was not confirmed in the clean visible page text.`,
+      evidence: "Phone pattern was found in page HTML/data, but not confirmed in the primary visible text extracted for the preview.",
+      fix: ["Put the phone number in the main header.", "Add a mobile sticky Call Now button.", "Keep Request Estimate and Call Now visible together."],
     });
   } else if (!hasTelLink) {
     findings.push({
@@ -146,10 +171,10 @@ function buildPreviewFromScrape({ url, cityState, email, industryId, html, title
     findings.push({ title: "City or service area was not clearly confirmed", severity: "warning", category: "Local Visibility", explanation: "Local visitors and search engines should quickly understand where the business works.", evidence: city ? `The city '${city}' was not found in the scanned homepage content.` : "No city was parsed from the submitted location.", fix: ["Add the city to the homepage headline or intro.", "List nearby service areas.", "Add local project examples with city labels."] });
   }
 
-  if (!hasVisibleReviewProof && !hasCertificationProof) {
+  if (!hasBasicReviewProof && !hasCertificationProof) {
     findings.push({ title: "Trust proof is not strongly visible in the preview", severity: "warning", category: "Trust Proof", explanation: "The scan did not confirm strong proof such as star ratings, review count, BBB/certification badges, warranty, licensing, or insurance language. A reviews link alone is weaker than proof visible on the page.", evidence: hasWeakReviewLinkOnly ? "Review/testimonial wording was found, but no star rating, review count, or certification proof was confirmed." : `Only ${trustCount} trust keyword(s) were found from the preview list.`, fix: ["Add a review or star-rating block near the top.", "Show licenses, insurance, warranties, or certifications.", "Add recent project proof or testimonials."] });
-  } else if (!hasVisibleReviewProof) {
-    findings.push({ title: "Reviews or star ratings are not clearly visible", severity: "warning", category: "Trust Proof", explanation: "The scan found some credibility signals, but did not confirm visible customer proof like a Google rating, star rating, or review count.", evidence: "Certification/warranty/local proof may exist, but review proof was not confirmed in the homepage scan.", fix: ["Place a Google rating or review count near the first screen.", "Add 2–3 short customer quotes.", "Link the review block to the full review page."] });
+  } else if (hasBasicReviewProof && !hasStrongReviewProof) {
+    findings.push({ title: "Review proof is visible, but the source or count could be clearer", severity: "warning", category: "Trust Proof", explanation: "The scan found basic review proof such as stars, testimonial wording, or a review link. The stronger version would show the review source and count, such as Google rating and number of reviews.", evidence: "Basic review/testimonial signal was found, but a clear rating source or review count was not confirmed.", fix: ["Add a Google rating or review count near the first screen.", "Show where the reviews came from.", "Keep the Read More Reviews button, but add a stronger summary above it."] });
   }
 
   if (hasBrokenCta) {
@@ -185,7 +210,9 @@ function buildPreviewFromScrape({ url, cityState, email, industryId, html, title
   if (!hasPhone) finalScore = Math.min(finalScore, 69);
   if (hasPhone && !hasTelLink) finalScore = Math.min(finalScore, 79);
   if (hasBrokenCta) finalScore = Math.min(finalScore, 64);
-  if (!hasVisibleReviewProof) finalScore = Math.min(finalScore, 82);
+  if (!hasBasicReviewProof) finalScore = Math.min(finalScore, 82);
+  if (hasBasicReviewProof && !hasStrongReviewProof) finalScore = Math.min(finalScore, 86);
+  if (phoneMayBeHidden) finalScore = Math.min(finalScore, 82);
   if (trustScore < 10) finalScore = Math.min(finalScore, 80);
   if (strongCtaCount === 0) finalScore = Math.min(finalScore, 82);
   if (trustScore < 10 && strongCtaCount === 0) finalScore = Math.min(finalScore, 78);
@@ -276,6 +303,7 @@ async function scrapeWithFirecrawl(normalizedUrl) {
 
     return {
       html,
+      visibleText: [data.markdown, metadata.title, metadata.description].filter(Boolean).join("\n\n"),
       title: metadata.title || data.title || "",
       description: metadata.description || data.description || "",
       finalUrl: metadata.sourceURL || metadata.url || data.url || normalizedUrl,
@@ -301,7 +329,7 @@ async function scrapeWithBasicFetch(normalizedUrl) {
     if (!response.ok) throw new Error(`Could not fetch site. Status ${response.status}`);
     const html = await response.text();
     const meta = extractMeta(html);
-    return { html, title: meta.title, description: meta.description, finalUrl: response.url };
+    return { html, visibleText: stripHtmlForVisibleText(html), title: meta.title, description: meta.description, finalUrl: response.url };
   } finally {
     clearTimeout(timeout);
   }
@@ -354,6 +382,7 @@ export default async function handler(req, res) {
     email,
     industryId,
     html: String(scrapeData.html || "").slice(0, 500000),
+    visibleText: String(scrapeData.visibleText || "").slice(0, 200000),
     title: scrapeData.title || "",
     description: scrapeData.description || "",
     finalUrl: scrapeData.finalUrl || normalizedUrl,
