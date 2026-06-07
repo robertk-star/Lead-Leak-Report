@@ -78,7 +78,7 @@ export default function IndustryLanding() {
             <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-4">What the full report will unlock later</h2>
               <p className="text-[#d1d5db] mb-6">
-                Build 1A validates the free preview flow. The paid report will give specific fixes and a web-person checklist.
+                Build 1B validates the free preview flow. The paid report will give specific fixes and a web-person checklist.
               </p>
               <ul className="space-y-3">
                 <li className="flex gap-2"><CheckCircle2 className="text-green-400" size={18} /> Top 5 lead leaks for {industry.label.toLowerCase()}</li>

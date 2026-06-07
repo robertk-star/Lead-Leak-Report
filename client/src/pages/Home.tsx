@@ -184,7 +184,7 @@ export default function Home() {
             <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-4">The paid report will be practical, not technical.</h2>
               <p className="text-[#d1d5db] mb-6">
-                Build 1A only creates the free preview. The paid report flow comes later with Firecrawl, AI report writing, Stripe, and PDF generation.
+                Build 1B improves the free preview. The paid report flow comes later with Firecrawl, AI report writing, Stripe, and PDF generation.
               </p>
               <ul className="space-y-3 text-sm text-[#f9fafb]">
                 <li className="flex gap-2"><CheckCircle2 className="text-green-400" size={18} /> Top 5 lead leaks</li>
@@ -214,7 +214,7 @@ export default function Home() {
           <div className="space-y-5">
             {[
               ["Is this an SEO audit?", "No. It is a conversion-first website preview with basic local SEO checks included."],
-              ["Does Build 1A charge money?", "No. This build is only the free preview foundation. Stripe and paid reports come later."],
+              ["Does Build 1B charge money?", "No. This build is only the improved free preview foundation. Stripe and paid reports come later."],
               ["What if my site is already strong?", "The preview can show a no-sale recommendation when it does not find enough meaningful issues."],
               ["Do you guarantee more leads?", "No. This is an informational review. Results depend on your website, market, traffic, and implementation."],
             ].map(([question, answer]) => (

@@ -5,6 +5,17 @@ export type PreviewFinding = {
   severity: "critical" | "warning" | "good";
   explanation: string;
   fix: string[];
+  evidence?: string;
+  category?: string;
+};
+
+export type PreviewCategory = {
+  key: string;
+  label: string;
+  score: number;
+  max: number;
+  status: "strong" | "needs-review" | "critical";
+  note: string;
 };
 
 export type PreviewResult = {
@@ -17,9 +28,15 @@ export type PreviewResult = {
   label: string;
   confidence: "Basic preview" | "Live homepage preview";
   findings: PreviewFinding[];
+  categories: PreviewCategory[];
   checkedAt: string;
   noSaleRecommended: boolean;
+  paidRecommendation: "recommended" | "not-recommended" | "manual-review";
+  criticalLeakTitle: string;
   summary: string;
+  localSeoGaps: string[];
+  webPersonChecklist: string[];
+  nextBestAction: string;
 };
 
 const phonePattern = /(\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/;
@@ -27,6 +44,10 @@ const phonePattern = /(\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/;
 function countMatches(content: string, keywords: string[]) {
   const lower = content.toLowerCase();
   return keywords.filter((keyword) => lower.includes(keyword.toLowerCase())).length;
+}
+
+function hasAny(content: string, keywords: string[]) {
+  return countMatches(content, keywords) > 0;
 }
 
 export function scoreLabel(score: number) {
@@ -43,6 +64,50 @@ export function normalizeUrl(url: string) {
   return `https://${trimmed}`;
 }
 
+function categoryStatus(score: number, max: number): PreviewCategory["status"] {
+  const pct = score / max;
+  if (pct >= 0.75) return "strong";
+  if (pct >= 0.45) return "needs-review";
+  return "critical";
+}
+
+function buildCategory(key: string, label: string, score: number, max: number, note: string): PreviewCategory {
+  return { key, label, score, max, status: categoryStatus(score, max), note };
+}
+
+function paidRecommendationFrom(score: number, findings: PreviewFinding[], confidence: PreviewResult["confidence"]): PreviewResult["paidRecommendation"] {
+  const criticalCount = findings.filter((finding) => finding.severity === "critical").length;
+  const warningCount = findings.filter((finding) => finding.severity === "warning").length;
+  if (criticalCount >= 1 || warningCount >= 3 || score < 78) return "recommended";
+  if (confidence === "Basic preview") return "manual-review";
+  return "not-recommended";
+}
+
+function recommendationText(rec: PreviewResult["paidRecommendation"], industry: IndustryConfig) {
+  if (rec === "recommended") {
+    return `This preview found enough possible issues to justify a deeper ${industry.label.toLowerCase()} Lead Leak Report if the business wants exact fixes.`;
+  }
+  if (rec === "manual-review") {
+    return "The automated preview could not read enough of the site to make a confident paid-report recommendation. A manual review or Firecrawl scan should be used before charging.";
+  }
+  return "The preview did not find enough meaningful issues to confidently recommend a paid report. That no-sale rule protects trust.";
+}
+
+function topCriticalTitle(findings: PreviewFinding[]) {
+  return findings.find((finding) => finding.severity === "critical")?.title || findings.find((finding) => finding.severity === "warning")?.title || "No critical leak found in the preview";
+}
+
+function commonWebPersonChecklist(industry: IndustryConfig) {
+  return [
+    "Make the main phone number click-to-call on mobile.",
+    `Make the first headline clearly say ${industry.primaryKeywords[0]} and the main city/service area.`,
+    `Add a clear ${industry.ctaKeywords[0]} button near the top of the page.`,
+    "Add visible reviews, star ratings, or testimonials near the top.",
+    "Add local project photos or service-area proof.",
+    "Shorten forms to 4–5 fields where possible.",
+  ];
+}
+
 export function buildFallbackPreview(params: {
   url: string;
   cityState: string;
@@ -51,54 +116,44 @@ export function buildFallbackPreview(params: {
 }): PreviewResult {
   const industry = getIndustryById(params.industryId);
   const normalizedUrl = normalizeUrl(params.url);
-  const content = `${params.url} ${params.cityState} ${industry.label}`.toLowerCase();
-  const city = params.cityState.split(",")[0]?.trim().toLowerCase() || "";
-  const hasIndustrySignal = countMatches(content, industry.primaryKeywords) > 0;
-  const hasCitySignal = city.length > 1 && content.includes(city);
-
-  const findings: PreviewFinding[] = [];
-  let score = 72;
-
-  if (!hasIndustrySignal) {
-    score -= 10;
-    findings.push({
-      title: `${industry.label} clarity needs to be checked`,
+  const findings: PreviewFinding[] = [
+    {
+      title: "Live homepage scan needed before charging",
       severity: "warning",
-      explanation: `The preview could not confirm from the submitted URL alone that the homepage clearly says ${industry.label.toLowerCase()} near the top.`,
-      fix: [
-        `Make the first headline clearly say ${industry.primaryKeywords[0]}.`,
-        "Use plain service language instead of only a brand slogan.",
-        "Put the main service and city in the first screen.",
-      ],
-    });
-  }
-
-  if (!hasCitySignal) {
-    score -= 8;
-    findings.push({
-      title: "Local service area needs to be checked",
-      severity: "warning",
+      category: "Preview Confidence",
       explanation:
-        "The preview could not confirm that the homepage clearly shows the city or service area in the first screen.",
+        "This preview could not confirm enough website content from the browser flow. Before selling a paid report, the system should read the homepage with the server analyzer or Firecrawl.",
+      evidence: "The fallback preview ran because the live site data was missing or blocked.",
       fix: [
-        "Add your city and primary service area to the homepage headline or intro.",
-        "List nearby towns or neighborhoods served.",
-        "Add local project examples when possible.",
+        "Use the server-side analyzer first.",
+        "Use Firecrawl in Build 2 for more reliable full-page reading.",
+        "Do not recommend payment unless meaningful issues are confirmed.",
       ],
-    });
-  }
+    },
+    {
+      title: `${industry.label} clarity should be verified`,
+      severity: "warning",
+      category: "5-Second Clarity",
+      explanation: `The preview needs to confirm whether the homepage clearly says ${industry.label.toLowerCase()} and shows the service area quickly.`,
+      fix: [
+        `The first screen should clearly mention ${industry.primaryKeywords[0]}.`,
+        "The first screen should mention the city or main service area.",
+        "The homepage should avoid using only a brand slogan above the fold.",
+      ],
+    },
+  ];
 
-  findings.push({
-    title: "Live homepage scan needed",
-    severity: "warning",
-    explanation:
-      "This Build 1A preview is set up for the full flow. If the live scan cannot read a site, it gives a basic preview and marks the confidence level clearly.",
-    fix: [
-      "Run the full report when available.",
-      "Check phone visibility, click-to-call, trust proof, forms, and local SEO basics.",
-      "Do not buy a paid report unless the preview finds meaningful issues.",
-    ],
-  });
+  const categories = [
+    buildCategory("confidence", "Preview Confidence", 2, 10, "Live scan not confirmed."),
+    buildCategory("call", "Call Readiness", 12, 25, "Phone and click-to-call need verification."),
+    buildCategory("clarity", "5-Second Service Clarity", 12, 20, "Industry and city clarity need verification."),
+    buildCategory("trust", "Trust Proof", 8, 20, "Reviews, certifications, and proof need verification."),
+    buildCategory("path", "Request Path", 8, 15, "CTA and form friction need verification."),
+    buildCategory("seo", "Local Visibility", 6, 10, "Basic local SEO signals need verification."),
+    buildCategory("freshness", "Freshness", 5, 10, "Freshness signals need verification."),
+  ];
+
+  const paidRecommendation = paidRecommendationFrom(64, findings, "Basic preview");
 
   return {
     inputUrl: params.url,
@@ -106,14 +161,23 @@ export function buildFallbackPreview(params: {
     cityState: params.cityState,
     email: params.email,
     industry,
-    score: Math.max(45, score),
-    label: scoreLabel(Math.max(45, score)),
+    score: 64,
+    label: scoreLabel(64),
     confidence: "Basic preview",
     findings,
+    categories,
     checkedAt: new Date().toISOString(),
-    noSaleRecommended: false,
-    summary:
-      "This is a basic preview because live scraping is not connected in the browser. The production analyzer should use a server-side endpoint, Firecrawl, or a screenshot tool for a deeper review.",
+    noSaleRecommended: paidRecommendation === "not-recommended",
+    paidRecommendation,
+    criticalLeakTitle: topCriticalTitle(findings),
+    summary: recommendationText(paidRecommendation, industry),
+    localSeoGaps: [
+      "Confirm the homepage title/headline includes service + city.",
+      "Confirm key service pages exist.",
+      "Confirm service areas and local proof are visible.",
+    ],
+    webPersonChecklist: commonWebPersonChecklist(industry),
+    nextBestAction: "Run a stronger live scan before asking this visitor to pay.",
   };
 }
 
@@ -146,134 +210,200 @@ export function buildPreviewFromScrape(params: {
   const hasStaleYear = lower.includes("2020") || lower.includes("2021") || lower.includes("2022");
   const formFieldCount = (params.html.match(/<(input|textarea|select)\b/gi) || []).length;
 
-  let score = 100;
+  let callScore = 0;
+  if (hasPhone) callScore += 10;
+  if (hasTelLink) callScore += 9;
+  if (ctaCount > 0) callScore += 4;
+  if (urgentCount > 0) callScore += 2;
+
+  let clarityScore = 0;
+  if (primaryCount > 0) clarityScore += 8;
+  if (serviceCount >= 2) clarityScore += 6;
+  else if (serviceCount === 1) clarityScore += 3;
+  if (hasCity) clarityScore += 4;
+  if (params.title && hasAny(params.title, industry.primaryKeywords)) clarityScore += 2;
+
+  let trustScore = 0;
+  if (trustCount >= 4) trustScore += 14;
+  else if (trustCount >= 2) trustScore += 10;
+  else if (trustCount === 1) trustScore += 5;
+  if (/gallery|portfolio|project|before|after|photo/i.test(text)) trustScore += 3;
+  if (/review|testimonial|stars?|google rating/i.test(text)) trustScore += 3;
+
+  let requestScore = 0;
+  if (ctaCount > 0) requestScore += 7;
+  if (/contact|form|quote|estimate|schedule|book/i.test(text)) requestScore += 4;
+  if (formFieldCount > 0 && formFieldCount <= 6) requestScore += 3;
+  if (formFieldCount === 0) requestScore += 1;
+  if (formFieldCount > 6) requestScore -= 4;
+
+  let localSeoScore = 0;
+  if (hasCity) localSeoScore += 3;
+  if (localSeoCount >= 2) localSeoScore += 3;
+  else if (localSeoCount === 1) localSeoScore += 1;
+  if (serviceCount >= 3) localSeoScore += 2;
+  if (/service area|areas served|nearby|county|neighborhood|zip/i.test(text)) localSeoScore += 2;
+
+  let freshnessScore = 5;
+  if (hasCurrentYear) freshnessScore += 3;
+  if (!hasStaleYear) freshnessScore += 2;
+  if (!hasCurrentYear && hasStaleYear) freshnessScore -= 3;
+
+  callScore = Math.max(0, Math.min(25, callScore));
+  clarityScore = Math.max(0, Math.min(20, clarityScore));
+  trustScore = Math.max(0, Math.min(20, trustScore));
+  requestScore = Math.max(0, Math.min(15, requestScore));
+  localSeoScore = Math.max(0, Math.min(10, localSeoScore));
+  freshnessScore = Math.max(0, Math.min(10, freshnessScore));
+
+  const categories = [
+    buildCategory("call", "Call Readiness", callScore, 25, hasPhone ? (hasTelLink ? "Phone and click-to-call found." : "Phone found, but click-to-call was not confirmed.") : "Phone number not found in homepage content."),
+    buildCategory("clarity", "5-Second Service Clarity", clarityScore, 20, primaryCount > 0 ? "Industry wording found." : "Main service wording was not confirmed."),
+    buildCategory("trust", "Trust Proof", trustScore, 20, trustCount >= 2 ? "Some trust wording found." : "Trust proof appears thin or buried."),
+    buildCategory("path", "Request Path", requestScore, 15, formFieldCount > 6 ? `Form may be high-friction with ${formFieldCount} fields.` : "Request path has basic signals."),
+    buildCategory("seo", "Local Visibility", localSeoScore, 10, hasCity ? "City/service-area signal found." : "City/service-area signal not confirmed."),
+    buildCategory("freshness", "Freshness", freshnessScore, 10, hasCurrentYear ? "Current year signal found." : hasStaleYear ? "Older dates found without a current year signal." : "Freshness signal was limited."),
+  ];
+
   const findings: PreviewFinding[] = [];
 
   if (!hasPhone) {
-    score -= 25;
     findings.push({
       title: "Critical leak: phone number not found on the homepage",
       severity: "critical",
+      category: "Call Readiness",
       explanation: `A local ${industry.label.toLowerCase()} customer should be able to call quickly. The scan did not find a phone number in the homepage content.`,
+      evidence: "No standard U.S. phone number pattern was found in the homepage HTML/text.",
       fix: ["Add a phone number to the header.", "Make the number click-to-call.", "Add a mobile call button for urgent visitors."],
     });
   } else if (!hasTelLink) {
-    score -= 12;
     findings.push({
-      title: "Phone number found, but click-to-call was not confirmed",
+      title: "Phone found, but click-to-call was not confirmed",
       severity: "warning",
+      category: "Call Readiness",
       explanation: "Mobile visitors may have to copy/paste or manually dial instead of tapping once to call.",
+      evidence: "A phone number was found, but the scan did not find an href=\"tel:\" link.",
       fix: ["Add a tel: link to every visible phone number.", "Use a clear 'Call Now' button.", "Test it on iPhone and Android."],
     });
   }
 
   if (primaryCount === 0) {
-    score -= 18;
     findings.push({
       title: `${industry.label} service clarity may be weak`,
       severity: "critical",
+      category: "5-Second Service Clarity",
       explanation: `The scan did not find clear ${industry.label.toLowerCase()} wording in the homepage content. Visitors should know what you do within seconds.`,
-      fix: [
-        `Add '${industry.primaryKeywords[0]}' to the main headline.`,
-        "Avoid using only a brand slogan in the first screen.",
-        "List your core services near the top.",
-      ],
+      evidence: `Missing primary terms checked: ${industry.primaryKeywords.slice(0, 4).join(", ")}.`,
+      fix: [`Add '${industry.primaryKeywords[0]}' to the main headline.`, "Avoid using only a brand slogan in the first screen.", "List your core services near the top."],
     });
   } else if (serviceCount < 2) {
-    score -= 8;
     findings.push({
       title: "Core services may not be specific enough",
       severity: "warning",
+      category: "5-Second Service Clarity",
       explanation: `The page mentions ${industry.label.toLowerCase()}, but the scan found limited specific service wording.`,
-      fix: [
-        `Mention services such as ${industry.serviceKeywords.slice(0, 3).join(", ")}.`,
-        "Add links to dedicated service pages.",
-        "Use homeowner/customer-friendly service names.",
-      ],
+      evidence: `Only ${serviceCount} specific service keyword(s) were found from the preview list.`,
+      fix: [`Mention services such as ${industry.serviceKeywords.slice(0, 3).join(", ")}.`, "Add links to dedicated service pages.", "Use customer-friendly service names."],
     });
   }
 
   if (!hasCity) {
-    score -= 10;
     findings.push({
       title: "City or service area was not clearly confirmed",
       severity: "warning",
-      explanation:
-        "Local visitors and search engines should quickly understand where the business works.",
+      category: "Local Visibility",
+      explanation: "Local visitors and search engines should quickly understand where the business works.",
+      evidence: city ? `The city '${city}' was not found in the scanned homepage content.` : "No city was parsed from the submitted location.",
       fix: ["Add the city to the homepage headline or intro.", "List nearby service areas.", "Add local project examples with city labels."],
     });
   }
 
   if (trustCount < 2) {
-    score -= 16;
     findings.push({
       title: "Trust proof appears thin or buried",
       severity: "warning",
-      explanation:
-        "The scan found limited reviews, certifications, warranty, licensing, or testimonial language on the homepage.",
+      category: "Trust Proof",
+      explanation: "The scan found limited reviews, certifications, warranty, licensing, or testimonial language on the homepage.",
+      evidence: `Only ${trustCount} trust keyword(s) were found from the preview list.`,
       fix: ["Add a review or star-rating block near the top.", "Show licenses, insurance, warranties, or certifications.", "Add recent project proof or testimonials."],
     });
   }
 
   if (ctaCount === 0) {
-    score -= 12;
     findings.push({
       title: "No strong call-to-action found",
       severity: "warning",
-      explanation:
-        "The page should give ready-to-act visitors a clear next step, not just general information.",
+      category: "Request Path",
+      explanation: "The page should give ready-to-act visitors a clear next step, not just general information.",
+      evidence: `No CTA terms were found from this industry list: ${industry.ctaKeywords.slice(0, 4).join(", ")}.`,
       fix: ["Add a clear CTA button near the top.", `Use wording like '${industry.ctaKeywords[0]}'.`, "Repeat the CTA after trust proof sections."],
     });
   }
 
   if (formFieldCount > 6) {
-    score -= 8;
     findings.push({
       title: "Contact form may have too much friction",
       severity: "warning",
+      category: "Request Path",
       explanation: `The scan found ${formFieldCount} form fields. Long forms can reduce quote or service requests, especially on mobile.`,
+      evidence: `${formFieldCount} input/select/textarea fields were found in the homepage HTML.`,
       fix: ["Reduce the form to 4–5 key fields.", "Ask for more detail after the first contact.", "Add a clear 'what happens next' line under the form."],
     });
   }
 
   if (localSeoCount < 2) {
-    score -= 6;
     findings.push({
       title: "Foundational local SEO signals may be light",
       severity: "warning",
-      explanation:
-        "The scan found limited local service keywords that help customers and search engines understand what you do.",
+      category: "Local Visibility",
+      explanation: "The scan found limited local service keywords that help customers and search engines understand what you do.",
+      evidence: `Only ${localSeoCount} foundational local visibility keyword(s) were found.`,
       fix: ["Add core service terms to the homepage.", "Create dedicated service pages.", "Add a short FAQ section for common local customer questions."],
     });
   }
 
   if (!hasCurrentYear && hasStaleYear) {
-    score -= 8;
     findings.push({
       title: "Freshness signals may look stale",
       severity: "warning",
-      explanation:
-        "Older dates can make a business look less active, even if the company is still operating.",
+      category: "Freshness",
+      explanation: "Older dates can make a business look less active, even if the company is still operating.",
+      evidence: "Older year references were found, but no 2025/2026 freshness signal was confirmed.",
       fix: ["Update copyright and recent project sections.", "Remove outdated notices.", "Add a recent project or seasonal service update."],
     });
   }
 
-  if (urgentCount === 0) {
-    score -= 3;
+  if (urgentCount === 0 && industry.id !== "landscaping") {
+    findings.push({
+      title: "Urgent-service language was not confirmed",
+      severity: "warning",
+      category: "Call Readiness",
+      explanation: `For ${industry.label.toLowerCase()} businesses, urgent visitors often want to know if same-day or emergency help is available.`,
+      evidence: `No urgent terms were found from this industry list: ${industry.urgentKeywords.slice(0, 4).join(", ")}.`,
+      fix: ["Add emergency, same-day, or urgent-service wording only if you truly offer it.", "Place urgent-service wording near the phone number.", "Create a dedicated urgent-service page if it is a real service."],
+    });
   }
 
   if (findings.length === 0) {
     findings.push({
       title: "No major preview leaks found",
       severity: "good",
-      explanation:
-        "The basic scan found a clear service path, local signal, trust wording, and contact path. This site may not need a basic paid report.",
+      category: "Overall",
+      explanation: "The basic scan found a clear service path, local signal, trust wording, and contact path. This site may not need a basic paid report.",
+      evidence: "The homepage passed the main rule-based checks in this preview.",
       fix: ["Consider a deeper manual review only if you want a second opinion.", "Keep reviews, photos, and service pages current.", "Track call clicks and form submissions."],
     });
   }
 
+  const score = categories.reduce((sum, category) => sum + category.score, 0);
   const finalScore = Math.max(25, Math.min(99, score));
-  const strongOrMediumIssues = findings.filter((finding) => finding.severity !== "good").length;
+  const paidRecommendation = paidRecommendationFrom(finalScore, findings, "Live homepage preview");
+  const localSeoGaps = [
+    hasCity ? "City/service area was found in the scanned content." : "Add the main city or service area to the homepage headline or opening section.",
+    localSeoCount >= 2 ? "Some foundational service keywords were found." : `Add service terms such as ${industry.localSeoKeywords.slice(0, 3).join(", ")}.`,
+    serviceCount >= 3 ? "Multiple core services were found." : "Create or link to dedicated service pages for the top services.",
+    /faq/i.test(text) ? "FAQ content appears to be present." : "Add a short FAQ section answering common local customer questions.",
+  ];
 
   return {
     inputUrl: params.url,
@@ -284,12 +414,20 @@ export function buildPreviewFromScrape(params: {
     score: finalScore,
     label: scoreLabel(finalScore),
     confidence: "Live homepage preview",
-    findings: findings.slice(0, 4),
+    findings: findings.slice(0, 5),
+    categories,
     checkedAt: new Date().toISOString(),
-    noSaleRecommended: finalScore >= 85 && strongOrMediumIssues < 3,
-    summary:
-      finalScore >= 85
-        ? "The basic preview found a fairly strong lead path. A paid report should only be recommended if a deeper scan finds more meaningful issues."
-        : "The basic preview found enough possible issues to justify a deeper paid report if the business wants exact fixes.",
+    noSaleRecommended: paidRecommendation === "not-recommended",
+    paidRecommendation,
+    criticalLeakTitle: topCriticalTitle(findings),
+    summary: recommendationText(paidRecommendation, industry),
+    localSeoGaps,
+    webPersonChecklist: commonWebPersonChecklist(industry),
+    nextBestAction:
+      paidRecommendation === "recommended"
+        ? "Show the locked full report offer once payments are added."
+        : paidRecommendation === "manual-review"
+          ? "Run a deeper manual or Firecrawl review before charging."
+          : "Do not push the paid report unless a deeper scan finds more meaningful issues.",
   };
 }
