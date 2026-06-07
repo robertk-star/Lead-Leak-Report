@@ -158,7 +158,7 @@ export default function Preview() {
         {error && (
           <Card className="mb-8 p-4 border border-yellow-200 bg-yellow-50 text-yellow-900">
             <p className="text-sm">
-              <strong>Note:</strong> {error} Showing a fallback preview. Build 2 should add Firecrawl for stronger full-page reading.
+              <strong>Note:</strong> {error} Showing a fallback preview. Check the Firecrawl key or site access if this should have used the enhanced reader.
             </p>
           </Card>
         )}
@@ -315,12 +315,12 @@ export default function Preview() {
         </Card>
 
         <Card className="bg-white border border-[#e5e7eb] p-8">
-          <h3 className="font-bold text-[#1a2332] mb-4">About Build 1B</h3>
+          <h3 className="font-bold text-[#1a2332] mb-4">About Build 2</h3>
           <p className="text-[#374151] mb-4">
-            This build improves the multi-niche preview quality. It adds category scoring, stronger evidence wording, paid-report recommendation rules, local SEO preview items, and a web-person checklist preview.
+            This build adds Firecrawl-ready site reading while keeping the current rule-based multi-niche preview. If FIRECRAWL_API_KEY is set in Vercel, the analyzer uses Firecrawl first and falls back to the basic reader if needed.
           </p>
           <p className="text-[#374151] mb-4">
-            The next build should add Firecrawl and screenshot/mobile checks before adding AI-generated full reports, Stripe, PDF generation, or a database.
+            The next build should add screenshot/mobile first-screen checks before adding AI-generated full reports, Stripe, PDF generation, or a database.
           </p>
           <p className="text-sm text-[#6b7280]"><strong>Disclaimer:</strong> This preview is an informational website review. It does not guarantee rankings, traffic, calls, or revenue.</p>
         </Card>

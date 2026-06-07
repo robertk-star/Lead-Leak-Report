@@ -26,7 +26,9 @@ export type PreviewResult = {
   industry: IndustryConfig;
   score: number;
   label: string;
-  confidence: "Basic preview" | "Live homepage preview";
+  confidence: "Basic preview" | "Live homepage preview" | "Firecrawl homepage preview";
+  scrapeSource?: string;
+  firecrawlConfigured?: boolean;
   findings: PreviewFinding[];
   categories: PreviewCategory[];
   checkedAt: string;

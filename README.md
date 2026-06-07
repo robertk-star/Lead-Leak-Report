@@ -1,10 +1,10 @@
 # Lead Leak Report
 
-Phase: **Build 1B — Improved Multi-Niche Free Preview**
+Phase: **Build 2 — Firecrawl-Ready Site Reading**
 
 This is still a Vite/React prototype, not a Next.js app.
 
-## What Build 1B includes
+## What Build 2 includes
 
 - Multi-niche landing page foundation.
 - Business type selector.
@@ -17,15 +17,16 @@ This is still a Vite/React prototype, not a Next.js app.
   - `/home-services`
 - Preview page at `/preview`.
 - Serverless analyzer route at `/api/analyze`.
-- Basic rule-based homepage fetch and scan.
-- Improved category scoring:
+- **Firecrawl-first homepage reading when `FIRECRAWL_API_KEY` is available.**
+- Basic fetch fallback if Firecrawl is not configured or temporarily fails.
+- Rule-based category scoring:
   - Call Readiness
   - 5-Second Service Clarity
   - Trust Proof
   - Request Path
   - Local Visibility
   - Freshness
-- Stronger preview findings with evidence language.
+- Evidence-based preview findings.
 - Paid-report recommendation logic:
   - Recommended
   - Manual review recommended
@@ -36,7 +37,6 @@ This is still a Vite/React prototype, not a Next.js app.
 
 ## What this build does not include yet
 
-- Firecrawl.
 - Screenshot or mobile rendering checks.
 - AI-generated full reports.
 - Stripe payment.
@@ -61,11 +61,23 @@ Do not use Next.js for this version.
 
 ## Environment variables
 
-None required for Build 1B.
+Recommended for Build 2:
+
+```txt
+FIRECRAWL_API_KEY=your_firecrawl_api_key
+```
+
+Optional fallback name also supported:
+
+```txt
+FIRECRAWL_API_TOKEN=your_firecrawl_api_key
+```
+
+If no Firecrawl key is set, the app still runs using the basic homepage fetch from Build 1B.
 
 ## SQL migration
 
-None required for Build 1B.
+None required for Build 2.
 
 ## Local commands
 
@@ -78,12 +90,11 @@ pnpm dev
 
 ## Recommended next build
 
-**Build 2 — Firecrawl + Better Site Reading**
+**Build 3 — Screenshot + Mobile First-Screen Checks**
 
 Recommended scope:
 
-- Add Firecrawl API key.
-- Use Firecrawl for more reliable full-homepage scrape.
-- Improve fallback handling for blocked sites.
-- Add basic screenshot/mobile-first-screen check if practical.
+- Add a screenshot/mobile-render check.
+- Check whether phone/CTA/trust proof appear in the first screen.
+- Detect broken-looking images where practical.
 - Keep Stripe/PDF/AI out until the preview analyzer feels reliable.

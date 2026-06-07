@@ -116,6 +116,89 @@ function buildPreviewFromScrape({ url, cityState, email, industryId, html, title
   return { inputUrl: url, normalizedUrl, cityState, email, industry, score, label: scoreLabel(score), confidence: "Live homepage preview", findings: findings.slice(0, 5), categories, checkedAt: new Date().toISOString(), noSaleRecommended: paidRecommendation === "not-recommended", paidRecommendation, criticalLeakTitle: topCriticalTitle(findings), summary: recommendationText(paidRecommendation, industry), localSeoGaps, webPersonChecklist: checklist(industry), nextBestAction: paidRecommendation === "recommended" ? "Show the locked full report offer once payments are added." : paidRecommendation === "manual-review" ? "Run a deeper manual or Firecrawl review before charging." : "Do not push the paid report unless a deeper scan finds more meaningful issues." };
 }
 
+
+async function scrapeWithFirecrawl(normalizedUrl) {
+  const apiKey = process.env.FIRECRAWL_API_KEY || process.env.FIRECRAWL_API_TOKEN;
+  if (!apiKey) return null;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25000);
+
+  try {
+    const response = await fetch("https://api.firecrawl.dev/v2/scrape", {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        url: normalizedUrl,
+        formats: ["markdown", "html", "links"],
+        onlyMainContent: false,
+        onlyCleanContent: false,
+        waitFor: 1000,
+        mobile: false,
+        removeBase64Images: true,
+        blockAds: true,
+        proxy: "auto",
+        timeout: 20000,
+      }),
+    });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new Error(`Firecrawl scrape failed with ${response.status}: ${text.slice(0, 160)}`);
+    }
+
+    const payload = await response.json();
+    if (!payload?.success || !payload?.data) {
+      throw new Error(payload?.error || "Firecrawl returned no scrape data");
+    }
+
+    const data = payload.data;
+    const metadata = data.metadata || {};
+    const html = [data.html, data.rawHtml, data.markdown, Array.isArray(data.links) ? data.links.join("\n") : ""]
+      .filter(Boolean)
+      .join("\n\n");
+
+    if (!html.trim()) throw new Error("Firecrawl returned empty page content");
+
+    return {
+      html,
+      title: metadata.title || data.title || "",
+      description: metadata.description || data.description || "",
+      finalUrl: metadata.sourceURL || metadata.url || data.url || normalizedUrl,
+      warning: data.warning || metadata.error || "",
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function scrapeWithBasicFetch(normalizedUrl) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 9000);
+  try {
+    const response = await fetch(normalizedUrl, {
+      signal: controller.signal,
+      headers: {
+        "User-Agent": "Mozilla/5.0 LeadLeakReportPreview/2.0",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+      },
+    });
+    clearTimeout(timeout);
+    if (!response.ok) throw new Error(`Could not fetch site. Status ${response.status}`);
+    const html = await response.text();
+    const meta = extractMeta(html);
+    return { html, title: meta.title, description: meta.description, finalUrl: response.url };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function extractMeta(html) {
   const title = html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1] || "";
   const description = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']/i)?.[1] || "";
@@ -124,21 +207,77 @@ function extractMeta(html) {
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
   const { url, cityState, email, industryId } = req.body || {};
   if (!url || !cityState || !email) return res.status(400).json({ error: "Missing required fields" });
+
   const normalizedUrl = normalizeUrl(url);
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 9000);
-  try {
-    const response = await fetch(normalizedUrl, { signal: controller.signal, headers: { "User-Agent": "Mozilla/5.0 LeadLeakReportPreview/1.1", Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8" } });
-    clearTimeout(timeout);
-    if (!response.ok) return res.status(502).json({ error: `Could not fetch site. Status ${response.status}` });
-    const html = await response.text();
-    const meta = extractMeta(html);
-    const result = buildPreviewFromScrape({ url, cityState, email, industryId, html: html.slice(0, 300000), title: meta.title, description: meta.description, finalUrl: response.url });
-    res.status(200).json(result);
-  } catch (error) {
-    clearTimeout(timeout);
-    res.status(502).json({ error: "Could not read this website yet" });
+  const firecrawlConfigured = Boolean(process.env.FIRECRAWL_API_KEY || process.env.FIRECRAWL_API_TOKEN);
+
+  let scrapeData = null;
+  let scrapeSource = "basic-fetch";
+  let firecrawlError = "";
+
+  if (firecrawlConfigured) {
+    try {
+      scrapeData = await scrapeWithFirecrawl(normalizedUrl);
+      scrapeSource = "firecrawl";
+    } catch (error) {
+      firecrawlError = error instanceof Error ? error.message : "Firecrawl scrape failed";
+    }
   }
+
+  if (!scrapeData) {
+    try {
+      scrapeData = await scrapeWithBasicFetch(normalizedUrl);
+      scrapeSource = firecrawlConfigured ? "basic-fetch-after-firecrawl-fallback" : "basic-fetch";
+    } catch (error) {
+      return res.status(502).json({
+        error: firecrawlConfigured
+          ? `Could not read this website with Firecrawl or the fallback fetch. ${firecrawlError ? `Firecrawl note: ${firecrawlError}` : ""}`
+          : "Could not read this website yet. Add FIRECRAWL_API_KEY in Build 2 for stronger site reading.",
+      });
+    }
+  }
+
+  const result = buildPreviewFromScrape({
+    url,
+    cityState,
+    email,
+    industryId,
+    html: String(scrapeData.html || "").slice(0, 500000),
+    title: scrapeData.title || "",
+    description: scrapeData.description || "",
+    finalUrl: scrapeData.finalUrl || normalizedUrl,
+  });
+
+  if (scrapeSource === "firecrawl") {
+    result.confidence = "Firecrawl homepage preview";
+    result.nextBestAction =
+      result.paidRecommendation === "recommended"
+        ? "Firecrawl read the homepage successfully. This preview is strong enough to show the locked full report offer once payments are added."
+        : result.paidRecommendation === "manual-review"
+          ? "Firecrawl read the homepage, but a manual review is still recommended before charging."
+          : "Firecrawl read the homepage and did not find enough meaningful issues to push a paid report.";
+  } else if (scrapeSource === "basic-fetch-after-firecrawl-fallback") {
+    result.confidence = "Live homepage preview";
+    result.findings = [
+      {
+        title: "Firecrawl was unavailable; fallback scan used",
+        severity: "warning",
+        category: "Preview Confidence",
+        explanation:
+          "The app is configured for Firecrawl, but this scan fell back to the basic homepage reader. The preview may miss JavaScript-rendered content or full-page details.",
+        evidence: firecrawlError ? firecrawlError.slice(0, 220) : "Firecrawl did not return usable content.",
+        fix: ["Check the FIRECRAWL_API_KEY value in Vercel.", "Confirm the Firecrawl account has credits.", "Run the preview again before charging for a report."],
+      },
+      ...result.findings,
+    ].slice(0, 5);
+    result.summary = `${result.summary} Firecrawl fallback was used, so verify the result before charging.`;
+  }
+
+  result.scrapeSource = scrapeSource;
+  result.firecrawlConfigured = firecrawlConfigured;
+
+  res.status(200).json(result);
 }
