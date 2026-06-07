@@ -1,12 +1,12 @@
 # Lead Leak Report
 
-Phase: **Build 2D — Finding Priority + Phone Path Emphasis**
+Phase: **Build 3 — Firecrawl Screenshot + First-Screen Review**
 
 This is still a Vite/React prototype, not a Next.js app.
 
-Build 2D is a scoring-quality update based on real-site testing. It does not add payments, PDFs, databases, or AI. The goal is to make the free preview prioritize the most important home-service conversion issue first, especially when a site has a decent estimate CTA but a weak or buried phone path.
+Build 3 adds Firecrawl screenshot capture and first-screen review support. It still does not add payments, PDFs, databases, or AI. The goal is to make the preview easier to compare against what a real visitor sees above the fold before we start generating paid reports.
 
-## What Build 2D includes
+## What Build 3 includes
 
 - Multi-niche landing page foundation.
 - Business type selector.
@@ -52,9 +52,20 @@ Build 2D is a scoring-quality update based on real-site testing. It does not add
 - A phone found late in the extracted homepage content is treated as a weaker call path, not a full first-screen call path.
 - Added a finding for “Estimate CTA is visible, but the call path is weaker.”
 
+- Firecrawl scrape now requests a screenshot output when available.
+- Preview page displays the rendered homepage screenshot if Firecrawl returns one.
+- Added a **First-Screen / Screenshot Review** section.
+- Added visual check statuses for:
+  - Homepage screenshot capture
+  - First-screen phone path
+  - First-screen CTA
+  - First-screen trust proof
+- The confidence badge can now show **Firecrawl + screenshot preview**.
+- Fixed a duplicate “Possible Fix” label in preview findings.
+
 ## What this build does not include yet
 
-- Screenshot or mobile rendering checks.
+- Automated computer-vision interpretation of screenshots.
 - AI-generated full reports.
 - Stripe payment.
 - PDF generation.
@@ -78,7 +89,7 @@ Do not use Next.js for this version.
 
 ## Environment variables
 
-Recommended for Build 2D:
+Recommended for Build 3:
 
 ```txt
 FIRECRAWL_API_KEY=your_firecrawl_api_key
@@ -94,7 +105,7 @@ If no Firecrawl key is set, the app still runs using the basic homepage fetch fr
 
 ## SQL migration
 
-None required for Build 2D.
+None required for Build 3.
 
 ## Local commands
 
@@ -107,11 +118,11 @@ pnpm dev
 
 ## Recommended next build
 
-**Build 3 — Screenshot + Mobile First-Screen Checks**
+**Build 4 — AI-Assisted Full Report Draft**
 
 Recommended scope:
 
-- Add a screenshot/mobile-render check.
-- Check whether phone/CTA/trust proof appear in the first screen.
-- Detect broken-looking images where practical.
-- Keep Stripe/PDF/AI out until the preview analyzer feels reliable.
+- Use the preview findings to generate a draft full report.
+- Keep the report disabled if the preview says “paid report not recommended.”
+- Generate copy/paste fixes, a local SEO gap section, and a web-person checklist.
+- Keep Stripe, PDF generation, and database storage out until the report language is trusted.

@@ -18,6 +18,12 @@ export type PreviewCategory = {
   note: string;
 };
 
+export type VisualCheck = {
+  label: string;
+  status: "confirmed" | "needs-review" | "not-confirmed";
+  note: string;
+};
+
 export type PreviewResult = {
   inputUrl: string;
   normalizedUrl: string;
@@ -26,9 +32,11 @@ export type PreviewResult = {
   industry: IndustryConfig;
   score: number;
   label: string;
-  confidence: "Basic preview" | "Live homepage preview" | "Firecrawl homepage preview";
+  confidence: "Basic preview" | "Live homepage preview" | "Firecrawl homepage preview" | "Firecrawl + screenshot preview";
   scrapeSource?: string;
   firecrawlConfigured?: boolean;
+  screenshotUrl?: string;
+  visualChecks?: VisualCheck[];
   findings: PreviewFinding[];
   categories: PreviewCategory[];
   checkedAt: string;
@@ -177,6 +185,11 @@ export function buildFallbackPreview(params: {
       "Confirm the homepage title/headline includes service + city.",
       "Confirm key service pages exist.",
       "Confirm service areas and local proof are visible.",
+    ],
+    visualChecks: [
+      { label: "Homepage screenshot", status: "not-confirmed", note: "No screenshot was captured in fallback preview." },
+      { label: "First-screen phone path", status: "needs-review", note: "A live screenshot is needed to confirm whether the phone is visible above the fold." },
+      { label: "First-screen CTA", status: "needs-review", note: "A live screenshot is needed to confirm CTA prominence." },
     ],
     webPersonChecklist: commonWebPersonChecklist(industry),
     nextBestAction: "Run a stronger live scan before asking this visitor to pay.",
@@ -523,6 +536,12 @@ export function buildPreviewFromScrape(params: {
     criticalLeakTitle: topCriticalTitle(findings),
     summary: recommendationText(paidRecommendation, industry),
     localSeoGaps,
+    visualChecks: [
+      { label: "Homepage screenshot", status: "not-confirmed", note: "Screenshot capture is only available from the Firecrawl API response." },
+      { label: "First-screen phone path", status: hasPhoneProminent ? "confirmed" : hasPhone ? "needs-review" : "not-confirmed", note: hasPhoneProminent ? "Phone appeared early in the scanned homepage content." : hasPhone ? "Phone was found, but not early enough to treat it as a first-screen call path." : "Phone was not found in the homepage scan." },
+      { label: "First-screen CTA", status: strongCtaCount > 0 ? "confirmed" : softCtaCount > 0 ? "needs-review" : "not-confirmed", note: strongCtaCount > 0 ? "Strong CTA wording was found in the scanned page content." : softCtaCount > 0 ? "A softer contact path was found, but a stronger service request CTA may be needed." : "No clear CTA wording was confirmed." },
+      { label: "First-screen trust proof", status: hasStrongReviewProof ? "confirmed" : hasBasicReviewProof || hasCertificationProof ? "needs-review" : "not-confirmed", note: hasStrongReviewProof ? "Strong review proof was found." : hasBasicReviewProof || hasCertificationProof ? "Some trust proof was found, but source/count or visual prominence may need review." : "Trust proof was not confirmed in the homepage scan." },
+    ],
     webPersonChecklist: commonWebPersonChecklist(industry),
     nextBestAction:
       paidRecommendation === "recommended"

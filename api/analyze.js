@@ -290,7 +290,7 @@ async function scrapeWithFirecrawl(normalizedUrl) {
       },
       body: JSON.stringify({
         url: normalizedUrl,
-        formats: ["markdown", "html", "links"],
+        formats: ["markdown", "html", "links", "screenshot"],
         onlyMainContent: false,
         onlyCleanContent: false,
         waitFor: 1000,
@@ -328,6 +328,7 @@ async function scrapeWithFirecrawl(normalizedUrl) {
       title: metadata.title || data.title || "",
       description: metadata.description || data.description || "",
       finalUrl: metadata.sourceURL || metadata.url || data.url || normalizedUrl,
+      screenshotUrl: data.screenshot || data.screenshotUrl || metadata.screenshot || metadata.screenshotUrl || "",
       warning: data.warning || metadata.error || "",
     };
   } finally {
@@ -350,7 +351,7 @@ async function scrapeWithBasicFetch(normalizedUrl) {
     if (!response.ok) throw new Error(`Could not fetch site. Status ${response.status}`);
     const html = await response.text();
     const meta = extractMeta(html);
-    return { html, visibleText: stripHtmlForVisibleText(html), title: meta.title, description: meta.description, finalUrl: response.url };
+    return { html, visibleText: stripHtmlForVisibleText(html), title: meta.title, description: meta.description, finalUrl: response.url, screenshotUrl: "" };
   } finally {
     clearTimeout(timeout);
   }
@@ -409,11 +410,20 @@ export default async function handler(req, res) {
     finalUrl: scrapeData.finalUrl || normalizedUrl,
   });
 
+  const screenshotUrl = String(scrapeData.screenshotUrl || "");
+  if (screenshotUrl) {
+    result.screenshotUrl = screenshotUrl;
+    result.visualChecks = [
+      { label: "Homepage screenshot", status: "confirmed", note: "Firecrawl returned a rendered homepage screenshot for manual first-screen review." },
+      ...(result.visualChecks || []).filter((check) => check.label !== "Homepage screenshot"),
+    ];
+  }
+
   if (scrapeSource === "firecrawl") {
-    result.confidence = "Firecrawl homepage preview";
+    result.confidence = screenshotUrl ? "Firecrawl + screenshot preview" : "Firecrawl homepage preview";
     result.nextBestAction =
       result.paidRecommendation === "recommended"
-        ? "Firecrawl read the homepage successfully. This preview is strong enough to show the locked full report offer once payments are added."
+        ? "Firecrawl read the homepage and captured screenshot data when available. This preview is strong enough to show the locked full report offer once payments are added."
         : result.paidRecommendation === "manual-review"
           ? "Firecrawl read the homepage, but a manual review is still recommended before charging."
           : "Firecrawl read the homepage and did not find enough meaningful issues to push a paid report.";

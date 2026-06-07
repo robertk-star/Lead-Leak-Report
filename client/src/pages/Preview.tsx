@@ -9,6 +9,7 @@ import {
   FileText,
   Lock,
   MapPin,
+  MonitorSmartphone,
   Phone,
   RefreshCw,
   Search,
@@ -293,6 +294,45 @@ export default function Preview() {
         </div>
 
         <Card className="bg-white border border-[#e5e7eb] p-8 mb-10">
+          <div className="flex items-center gap-3 mb-4">
+            <MonitorSmartphone className="text-[#d97706]" size={24} />
+            <h3 className="font-bold text-[#1a2332]">First-Screen / Screenshot Review</h3>
+          </div>
+          <p className="text-sm text-[#374151] mb-6">
+            Build 3 adds a Firecrawl screenshot handoff so the preview can be compared against what a visitor actually sees. The score is still rule-based, but this makes manual QA and future screenshot/AI review much easier.
+          </p>
+          <div className="grid lg:grid-cols-2 gap-6 items-start">
+            <div className="rounded-lg border border-[#e5e7eb] bg-[#f9fafb] p-4">
+              {result.screenshotUrl ? (
+                <a href={result.screenshotUrl} target="_blank" rel="noreferrer" className="block">
+                  <img src={result.screenshotUrl} alt="Homepage screenshot captured by Firecrawl" className="w-full max-h-[360px] object-contain rounded border border-[#e5e7eb] bg-white" />
+                  <p className="text-xs text-[#6b7280] mt-2">Click screenshot to open full-size capture.</p>
+                </a>
+              ) : (
+                <div className="min-h-[180px] flex items-center justify-center text-center text-sm text-[#6b7280]">
+                  No screenshot was returned for this scan. Firecrawl may still have read the homepage text successfully.
+                </div>
+              )}
+            </div>
+            <div className="space-y-3">
+              {(result.visualChecks || []).map((check) => {
+                const styles = check.status === "confirmed" ? "bg-green-100 text-green-700" : check.status === "not-confirmed" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-800";
+                const label = check.status === "confirmed" ? "Confirmed" : check.status === "not-confirmed" ? "Not confirmed" : "Needs review";
+                return (
+                  <div key={check.label} className="rounded-lg border border-[#e5e7eb] p-4">
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <p className="font-bold text-[#1a2332]">{check.label}</p>
+                      <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${styles}`}>{label}</span>
+                    </div>
+                    <p className="text-xs text-[#6b7280]">{check.note}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </Card>
+
+        <Card className="bg-white border border-[#e5e7eb] p-8 mb-10">
           <h3 className="font-bold text-[#1a2332] mb-6">What the preview checked</h3>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {result.categories.map((category) => {
@@ -368,12 +408,12 @@ export default function Preview() {
         </Card>
 
         <Card className="bg-white border border-[#e5e7eb] p-8">
-          <h3 className="font-bold text-[#1a2332] mb-4">About Build 2D</h3>
+          <h3 className="font-bold text-[#1a2332] mb-4">About Build 3</h3>
           <p className="text-[#374151] mb-4">
-            This build improves finding priority after real-site testing. It now treats a weak or buried phone path as a higher-priority issue than softer trust-proof improvements, while still separating basic review proof from stronger review proof with a visible source/count.
+            This build adds Firecrawl screenshot capture and first-screen visual review checks. The analyzer still uses rule-based scoring, but the preview can now show a rendered homepage screenshot when Firecrawl returns one, making it easier to compare the automated findings against what a visitor actually sees.
           </p>
           <p className="text-[#374151] mb-4">
-            The next build should add screenshot/mobile first-screen checks so the preview can verify exactly what appears above the fold before adding AI-generated full reports, Stripe, PDF generation, or a database.
+            The next build should add AI-assisted full report drafting from the preview findings. Stripe, PDF generation, report storage, and share links should still wait until the preview and report language are trusted.
           </p>
           <p className="text-sm text-[#6b7280]"><strong>Disclaimer:</strong> This preview is an informational website review. It does not guarantee rankings, traffic, calls, or revenue.</p>
         </Card>
