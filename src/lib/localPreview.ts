@@ -40,6 +40,22 @@ export type AiVisibilityReadiness = {
   note: string;
 };
 
+export type OffsiteVisibilitySignal = {
+  label: string;
+  status: "strong" | "needs-review" | "missing";
+  note: string;
+  fix: string;
+};
+
+export type OffsiteVisibilityReadiness = {
+  score: number;
+  label: string;
+  summary: string;
+  signals: OffsiteVisibilitySignal[];
+  gaps: string[];
+  note: string;
+};
+
 export type FullReportDraft = {
   source: "rules" | "openai";
   generatedAt: string;
@@ -77,6 +93,8 @@ export type PreviewResult = {
   summary: string;
   localSeoGaps: string[];
   aiVisibility: AiVisibilityReadiness;
+  offsiteVisibility?: OffsiteVisibilityReadiness;
+  overallAiVisibility?: { score: number; label: string; summary: string };
   webPersonChecklist: string[];
   nextBestAction: string;
   fullReportDraft?: FullReportDraft;
@@ -151,6 +169,41 @@ function commonWebPersonChecklist(industry: IndustryConfig) {
   ];
 }
 
+
+function buildFallbackOffsiteVisibility(industry: IndustryConfig): OffsiteVisibilityReadiness {
+  return {
+    score: 38,
+    label: "Off-site visibility not verified",
+    summary:
+      "The fallback preview did not run third-party/entity checks. A full AI visibility report should verify Google Business Profile, review platforms, directory/list mentions, brand consistency, and schema/sameAs signals before scoring off-site visibility.",
+    signals: [
+      {
+        label: "Google Business Profile / local pack",
+        status: "missing",
+        note: "Not checked in fallback mode.",
+        fix: "Verify that the business has a Google Business Profile under the same name used on the website.",
+      },
+      {
+        label: "Review platform consistency",
+        status: "missing",
+        note: "Not checked in fallback mode.",
+        fix: "Confirm Google, BBB, Facebook, Angi, Yelp, and other review profiles use the same business name and website URL.",
+      },
+      {
+        label: "Best-of / editorial citations",
+        status: "needs-review",
+        note: "Not checked in fallback mode.",
+        fix: `Look for local best-of lists, trade directories, and ${industry.label.toLowerCase()} award pages that mention the business.`,
+      },
+    ],
+    gaps: [
+      "Run off-site/entity consistency checks before calling this a full AI visibility report.",
+      "Verify Google Business Profile, review platform names, third-party citations, awards, and manufacturer/trade listings.",
+    ],
+    note: "This off-site score is not based on live AI rankings. It identifies whether outside sources appear to confirm the business entity, reviews, reputation, and local relevance.",
+  };
+}
+
 export function buildFallbackPreview(params: {
   url: string;
   cityState: string;
@@ -220,6 +273,12 @@ export function buildFallbackPreview(params: {
       "Confirm service areas and local proof are visible.",
     ],
     aiVisibility: buildFallbackAiVisibility(industry),
+    offsiteVisibility: buildFallbackOffsiteVisibility(industry),
+    overallAiVisibility: {
+      score: 45,
+      label: "Overall AI visibility not verified",
+      summary: "The fallback preview cannot combine on-site and off-site visibility because the live analyzer did not run.",
+    },
     visualChecks: [
       { label: "Homepage screenshot", status: "not-confirmed", note: "No screenshot was captured in fallback preview." },
       { label: "First-screen phone path", status: "needs-review", note: "A live screenshot is needed to confirm whether the phone is visible above the fold." },

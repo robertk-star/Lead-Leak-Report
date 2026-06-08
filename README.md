@@ -1,4 +1,4 @@
-# Lead Leak Report — Build 5
+# Lead Leak Report — Build 6
 
 This build is the current Next.js App Router version of Lead Leak Report.
 
@@ -21,29 +21,26 @@ This build is the current Next.js App Router version of Lead Leak Report.
   - `/faq`
 - Analyzer API at `/app/api/analyze/route.ts`
 - Firecrawl homepage/screenshot support
-- AI Visibility Readiness score
 - Lead Leak preview score
+- On-Site AI Readiness score
+- Off-Site AI Visibility score
+- Overall AI Visibility score
 - AI-assisted full report draft section
 - Rule-based full report draft fallback when OpenAI is not configured
 - `robots.txt`, `sitemap.xml`, and `llms.txt` in `/public`
 
-## Build 5 additions
+## Build 6 additions
 
-Build 5 adds a full-report-style draft to the preview page.
+Build 6 separates AI visibility into two parts:
 
-When `OPENAI_API_KEY` is configured, `/api/analyze` uses OpenAI to draft:
+1. **On-Site AI Readiness** — checks the website itself: business identity, service clarity, location clarity, trust proof, crawlable content, schema, and contact clarity.
+2. **Off-Site AI Visibility** — checks whether the website exposes or links to external/entity signals that can help AI/search systems verify the business: Google Business Profile, review platforms, BBB/Facebook/Yelp/Angi, manufacturer/trade directories, awards, best-of citations, schema, and sameAs links.
 
-- Executive Summary
-- AI Visibility Summary
-- Lead Leak Summary
-- Local SEO Summary
-- Top Recommendations
-- Copy/Paste Fixes
-- Google Business Profile Freshness Ideas
-- 7-Day Fix Plan
-- Web-Person Checklist
+It also adds an **Overall AI Visibility** score that weights off-site/entity consistency more heavily than on-site readiness because AI recommendations often rely on third-party verification, reviews, citations, and brand consistency.
 
-When `OPENAI_API_KEY` is not configured or the OpenAI call fails, the app uses a rule-based fallback draft so the preview still works.
+## Important limitation
+
+This build does **not** run live ChatGPT, Gemini, Copilot, Google AI, or Google ranking tests. It is a readiness and signal check. It does not guarantee AI recommendations, rankings, traffic, calls, leads, or revenue.
 
 ## Vercel settings
 

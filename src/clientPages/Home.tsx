@@ -51,7 +51,7 @@ const checks = [
   {
     icon: ShieldCheck,
     title: "AI Visibility Readiness",
-    text: "Does the site give AI/search systems clear business, service, location, trust, and crawlability signals?",
+    text: "Does the site give AI/search systems clear on-site signals and off-site/entity proof they can verify?",
   },
 ];
 
@@ -163,7 +163,7 @@ export default function Home() {
             <Card className="p-6 border border-[#e5e7eb]">
               <MapPin className="text-[#d97706] mb-4" size={32} />
               <h3 className="font-bold text-[#1a2332] mb-2">AI visibility signals are thin</h3>
-              <p className="text-[#374151] text-sm">AI/search systems need crawlable business, service, location, and trust signals before they can understand your company.</p>
+              <p className="text-[#374151] text-sm">AI/search systems need crawlable business, service, location, trust, and third-party verification signals before they can understand and verify your company.</p>
             </Card>
           </div>
         </div>
@@ -212,10 +212,10 @@ export default function Home() {
             <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-4">The paid report will be practical, not technical.</h2>
               <p className="text-[#d1d5db] mb-6">
-                Build 4A adds AI Visibility Readiness to the free preview. The paid report flow comes later with AI report writing, Stripe, and PDF generation.
+                Build 6 separates on-site AI readiness from off-site/entity visibility. The paid report flow comes later with Stripe and PDF generation.
               </p>
               <ul className="space-y-3 text-sm text-[#f9fafb]">
-                <li className="flex gap-2"><CheckCircle2 className="text-green-400" size={18} /> AI Visibility Readiness score</li>
+                <li className="flex gap-2"><CheckCircle2 className="text-green-400" size={18} /> On-Site + Off-Site AI Visibility scores</li>
                 <li className="flex gap-2"><CheckCircle2 className="text-green-400" size={18} /> Top 5 lead leaks</li>
                 <li className="flex gap-2"><CheckCircle2 className="text-green-400" size={18} /> Copy/paste fixes</li>
                 <li className="flex gap-2"><CheckCircle2 className="text-green-400" size={18} /> Foundational local SEO gaps</li>
@@ -244,7 +244,7 @@ export default function Home() {
             {[
               ["Is this an SEO audit?", "No. It is an AI Visibility + Lead Leak preview with foundational local SEO checks included."],
               ["Does this guarantee ChatGPT will recommend me?", "No. It checks readiness signals AI/search systems can use. It does not guarantee AI rankings, mentions, calls, or revenue."],
-              ["Does Build 4A charge money?", "No. This build is only the free preview foundation. Stripe and paid reports come later."],
+              ["Does Build 6 charge money?", "No. This build is only the free preview foundation. Stripe and paid reports come later."],
               ["What if my site is already strong?", "The preview can show a no-sale recommendation when it does not find enough meaningful issues."],
               ["Do you guarantee more leads?", "No. This is an informational review. Results depend on your website, market, traffic, and implementation."],
             ].map(([question, answer]) => (

@@ -301,11 +301,63 @@ export default function Preview() {
           </div>
         </div>
 
+        {result.overallAiVisibility && (
+          <Card className="bg-white border-2 border-[#1e40af] p-8 mb-10">
+            <div className="grid lg:grid-cols-[260px_1fr] gap-8 items-start">
+              <div className="text-center lg:text-left">
+                <p className="text-xs font-bold uppercase tracking-wide text-[#1e40af] mb-2">Overall AI Visibility</p>
+                <div className="text-6xl font-bold text-[#1e40af] mb-1">{result.overallAiVisibility.score}</div>
+                <div className="text-sm font-semibold text-[#6b7280] mb-3">/ 100</div>
+                <h3 className="text-xl font-bold text-[#1a2332] mb-2">{result.overallAiVisibility.label}</h3>
+              </div>
+              <div className="rounded-lg border border-blue-100 bg-blue-50 p-5 text-sm text-[#1e3a8a]">
+                <p className="font-bold mb-2">Why this score matters</p>
+                <p>{result.overallAiVisibility.summary}</p>
+                <p className="mt-3 text-xs text-[#1e3a8a]">This is still a readiness score. It does not guarantee ChatGPT, Gemini, Copilot, Google AI, or any other AI/search tool will recommend the business.</p>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {result.offsiteVisibility && (
+          <Card className="bg-white border-2 border-[#7c3aed] p-8 mb-10">
+            <div className="flex flex-col lg:flex-row gap-8 lg:items-start">
+              <div className="lg:w-64 text-center lg:text-left">
+                <p className="text-xs font-bold uppercase tracking-wide text-[#7c3aed] mb-2">Off-Site AI Visibility</p>
+                <div className="text-6xl font-bold text-[#7c3aed] mb-1">{result.offsiteVisibility.score}</div>
+                <div className="text-sm font-semibold text-[#6b7280] mb-3">/ 100</div>
+                <h3 className="text-xl font-bold text-[#1a2332] mb-2">{result.offsiteVisibility.label}</h3>
+                <p className="text-sm text-[#374151]">{result.offsiteVisibility.summary}</p>
+              </div>
+              <div className="flex-1">
+                <div className="mb-5 rounded-lg border border-purple-100 bg-purple-50 p-4 text-sm text-[#4c1d95]">
+                  <strong>What this means:</strong> This checks whether the website exposes or links to outside signals AI/search systems can use to verify the business: Google Business Profile, review platforms, BBB/Facebook/Yelp/Angi, manufacturer directories, best-of lists, awards, schema, and sameAs links.
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {result.offsiteVisibility.signals.map((signal) => {
+                    const styles = getAiSignalStyles(signal.status);
+                    return (
+                      <div key={signal.label} className="rounded-lg border border-[#e5e7eb] p-4">
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                          <p className="font-bold text-[#1a2332]">{signal.label}</p>
+                          <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${styles.badge}`}>{styles.label}</span>
+                        </div>
+                        <p className="text-xs text-[#6b7280] mb-3">{signal.note}</p>
+                        <p className="text-xs text-[#374151]"><strong>Fix:</strong> {signal.fix}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {result.aiVisibility && (
           <Card className="bg-white border-2 border-[#2563eb] p-8 mb-10">
             <div className="flex flex-col lg:flex-row gap-8 lg:items-start">
               <div className="lg:w-64 text-center lg:text-left">
-                <p className="text-xs font-bold uppercase tracking-wide text-[#2563eb] mb-2">AI Search Readiness</p>
+                <p className="text-xs font-bold uppercase tracking-wide text-[#2563eb] mb-2">On-Site AI Readiness</p>
                 <div className="text-6xl font-bold text-[#2563eb] mb-1">{result.aiVisibility.score}</div>
                 <div className="text-sm font-semibold text-[#6b7280] mb-3">/ 100</div>
                 <h3 className="text-xl font-bold text-[#1a2332] mb-2">{result.aiVisibility.label}</h3>
@@ -313,7 +365,7 @@ export default function Preview() {
               </div>
               <div className="flex-1">
                 <div className="mb-5 rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm text-[#1e3a8a]">
-                  <strong>What this means:</strong> This does not test live rankings in ChatGPT, Gemini, Copilot, or Google AI. It checks whether the site gives AI/search systems clear business, service, location, trust, and crawlability signals they can use.
+                  <strong>What this means:</strong> This score checks the website itself: business identity, service clarity, location, trust, crawlable content, and basic schema signals. It does not include Google Business Profile, review platforms, awards, directories, or live AI rankings.
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   {result.aiVisibility.signals.map((signal) => {
@@ -435,7 +487,7 @@ export default function Preview() {
               <h3 className="font-bold text-[#1a2332]">AI-Assisted Full Report Draft</h3>
             </div>
             <p className="text-sm text-[#6b7280] mb-6">
-              Build 5 drafts the paid-report content from the preview findings. Source: {result.fullReportDraft.source === "openai" ? "OpenAI-assisted draft" : "rule-based fallback draft"}. Payments, PDF generation, report storage, and share links are still not enabled.
+              Build 6 drafts the paid-report content and separates on-site AI readiness from off-site/entity visibility from the preview findings. Source: {result.fullReportDraft.source === "openai" ? "OpenAI-assisted draft" : "rule-based fallback draft"}. Payments, PDF generation, report storage, and share links are still not enabled.
             </p>
 
             <div className="grid lg:grid-cols-2 gap-6 mb-6">
