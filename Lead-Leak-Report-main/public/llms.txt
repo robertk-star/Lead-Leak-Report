@@ -1,0 +1,20 @@
+# Lead Leak Report
+
+Lead Leak Report provides AI visibility readiness and website lead leak checks for local service businesses, including roofers, plumbers, electricians, HVAC companies, landscapers, and other home service contractors.
+
+## Core pages
+
+- /: Main product page for AI Visibility + Lead Leak Report
+- /ai-visibility: Explanation of AI visibility readiness for local service businesses
+- /how-it-works: How the preview reads and scores a website
+- /sample-report: Overview of the paid report sections
+- /pricing: Early-access pricing information
+- /faq: Common questions and clear limitations
+
+## Product summary
+
+The product checks whether a local service business website gives AI search tools and customers clear signals about who the business is, what services it offers, where it works, why it can be trusted, and how customers can contact it. The report also checks for website lead leaks such as weak phone visibility, unclear calls-to-action, missing trust proof, form friction, weak local proof, and foundational local SEO gaps.
+
+## Limitations
+
+Lead Leak Report does not guarantee AI mentions, search rankings, website traffic, phone calls, estimate requests, or revenue. It provides an informational readiness review and practical fixes.
