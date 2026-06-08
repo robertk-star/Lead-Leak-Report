@@ -346,10 +346,10 @@ function buildPreviewFromScrape({ url, cityState, email, industryId, html, visib
   const aiVisibility = buildAiVisibilityReadiness({
     industry,
     visibleContent,
-    html: params.html,
+    html,
     text,
-    title: params.title || "",
-    description: params.description || "",
+    title: title || "",
+    description: description || "",
     city,
     hasCity,
     hasPhone,
