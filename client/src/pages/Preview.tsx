@@ -448,7 +448,7 @@ export default function Preview() {
         </Card>
 
         <Card className="bg-white border border-[#e5e7eb] p-8">
-          <h3 className="font-bold text-[#1a2332] mb-4">About Build 4</h3>
+          <h3 className="font-bold text-[#1a2332] mb-4">About Build 4A</h3>
           <p className="text-[#374151] mb-4">
             This build adds the AI Visibility Readiness layer. It checks whether the site gives AI/search systems clear business, service, location, trust, crawlability, and third-party footprint signals they can use to understand a local service business.
           </p>

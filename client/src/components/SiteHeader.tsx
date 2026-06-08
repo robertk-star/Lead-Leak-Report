@@ -3,6 +3,15 @@ import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Link } from "wouter";
 
+const navLinks = [
+  ["Industries", "/#industries"],
+  ["AI Visibility", "/ai-visibility"],
+  ["How It Works", "/how-it-works"],
+  ["Sample Report", "/sample-report"],
+  ["Pricing", "/pricing"],
+  ["FAQ", "/faq"],
+];
+
 export default function SiteHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -16,11 +25,12 @@ export default function SiteHeader() {
           <span className="font-bold text-[#1a2332] text-lg">Lead Leak Report</span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-7">
-          <a href="/#industries" className="text-[#374151] hover:text-[#1a2332] transition">Industries</a>
-          <a href="/#what-we-check" className="text-[#374151] hover:text-[#1a2332] transition">What We Check</a>
-          <a href="/#sample-report" className="text-[#374151] hover:text-[#1a2332] transition">Sample Report</a>
-          <a href="/#faq" className="text-[#374151] hover:text-[#1a2332] transition">FAQ</a>
+        <nav className="hidden lg:flex items-center gap-6">
+          {navLinks.map(([label, href]) => (
+            <a key={href} href={href} className="text-[#374151] hover:text-[#1a2332] transition">
+              {label}
+            </a>
+          ))}
         </nav>
 
         <div className="hidden md:block">
@@ -29,18 +39,19 @@ export default function SiteHeader() {
           </a>
         </div>
 
-        <button className="md:hidden text-[#1a2332]" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Open menu">
+        <button className="lg:hidden text-[#1a2332]" onClick={() => setMobileMenuOpen(!mobileMenuOpen)} aria-label="Open menu">
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
       </div>
 
       {mobileMenuOpen && (
-        <nav className="md:hidden border-t border-[#e5e7eb] bg-white">
+        <nav className="lg:hidden border-t border-[#e5e7eb] bg-white">
           <div className="container py-4 flex flex-col gap-4">
-            <a href="/#industries" className="text-[#374151] hover:text-[#1a2332]">Industries</a>
-            <a href="/#what-we-check" className="text-[#374151] hover:text-[#1a2332]">What We Check</a>
-            <a href="/#sample-report" className="text-[#374151] hover:text-[#1a2332]">Sample Report</a>
-            <a href="/#faq" className="text-[#374151] hover:text-[#1a2332]">FAQ</a>
+            {navLinks.map(([label, href]) => (
+              <a key={href} href={href} className="text-[#374151] hover:text-[#1a2332]">
+                {label}
+              </a>
+            ))}
             <a href="/#check">
               <Button className="w-full bg-[#d97706] hover:bg-[#b45309] text-white font-semibold">Check My Website</Button>
             </a>

@@ -1,4 +1,6 @@
 import LeadCheckForm from "@/components/LeadCheckForm";
+import PageFooter from "@/components/PageFooter";
+import { SEO, faqJsonLd, organizationJsonLd, softwareJsonLd, websiteJsonLd } from "@/components/SEO";
 import SiteHeader from "@/components/SiteHeader";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -51,9 +53,33 @@ const checks = [
   },
 ];
 
+
+const homepageFaq = [
+  {
+    question: "Is this an SEO audit?",
+    answer:
+      "No. Lead Leak Report is a conversion-first and AI-visibility-readiness report with foundational local SEO checks included.",
+  },
+  {
+    question: "Do you guarantee AI tools will recommend my business?",
+    answer:
+      "No. The report checks whether your site has clear business, service, location, trust, and crawlability signals that can support AI visibility readiness.",
+  },
+  {
+    question: "What if my site is already strong?",
+    answer: "The preview can show a no-sale recommendation when it does not find enough meaningful issues.",
+  },
+];
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-[#f9fafb]">
+      <SEO
+        title="AI Visibility and Lead Leak Report for Local Service Businesses"
+        description="Check whether your local service business website is ready for AI search and whether it leaks calls, estimate requests, trust, and foundational local SEO signals."
+        path="/"
+        jsonLd={[websiteJsonLd(), organizationJsonLd(), softwareJsonLd(), faqJsonLd(homepageFaq)]}
+      />
       <SiteHeader />
 
       <section id="check" className="bg-gradient-to-b from-white to-[#f9fafb] py-16 md:py-24 border-b-4 border-[#d97706]">
@@ -184,7 +210,7 @@ export default function Home() {
             <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-4">The paid report will be practical, not technical.</h2>
               <p className="text-[#d1d5db] mb-6">
-                Build 4 adds AI Visibility Readiness to the free preview. The paid report flow comes later with AI report writing, Stripe, and PDF generation.
+                Build 4A adds AI Visibility Readiness to the free preview. The paid report flow comes later with AI report writing, Stripe, and PDF generation.
               </p>
               <ul className="space-y-3 text-sm text-[#f9fafb]">
                 <li className="flex gap-2"><CheckCircle2 className="text-green-400" size={18} /> AI Visibility Readiness score</li>
@@ -216,7 +242,7 @@ export default function Home() {
             {[
               ["Is this an SEO audit?", "No. It is an AI Visibility + Lead Leak preview with foundational local SEO checks included."],
               ["Does this guarantee ChatGPT will recommend me?", "No. It checks readiness signals AI/search systems can use. It does not guarantee AI rankings, mentions, calls, or revenue."],
-              ["Does Build 4 charge money?", "No. This build is only the free preview foundation. Stripe and paid reports come later."],
+              ["Does Build 4A charge money?", "No. This build is only the free preview foundation. Stripe and paid reports come later."],
               ["What if my site is already strong?", "The preview can show a no-sale recommendation when it does not find enough meaningful issues."],
               ["Do you guarantee more leads?", "No. This is an informational review. Results depend on your website, market, traffic, and implementation."],
             ].map(([question, answer]) => (
@@ -229,17 +255,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="bg-[#1a2332] text-white py-10">
-        <div className="container flex flex-col md:flex-row justify-between gap-4">
-          <div>
-            <p className="font-bold text-lg">Lead Leak Report</p>
-            <p className="text-sm text-[#d1d5db] mt-1">AI visibility + website conversion checks for service businesses.</p>
-          </div>
-          <p className="text-xs text-[#9ca3af] max-w-xl">
-            This report is an informational website review. It does not guarantee rankings, traffic, calls, or revenue.
-          </p>
-        </div>
-      </footer>
+      <PageFooter />
     </div>
   );
 }

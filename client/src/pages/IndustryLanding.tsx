@@ -1,4 +1,6 @@
 import LeadCheckForm from "@/components/LeadCheckForm";
+import PageFooter from "@/components/PageFooter";
+import { SEO, organizationJsonLd, softwareJsonLd, websiteJsonLd } from "@/components/SEO";
 import SiteHeader from "@/components/SiteHeader";
 import { Card } from "@/components/ui/card";
 import { getIndustryBySlug } from "@/data/industries";
@@ -21,6 +23,12 @@ export default function IndustryLanding() {
 
   return (
     <div className="min-h-screen bg-[#f9fafb]">
+      <SEO
+        title={`AI Visibility and Lead Leak Report for ${industry.pluralLabel}`}
+        description={`Check whether your ${industry.label.toLowerCase()} website is ready for AI search and whether it leaks calls, quote requests, trust, and local visibility signals.`}
+        path={`/${industry.slug}`}
+        jsonLd={[websiteJsonLd(), organizationJsonLd(), softwareJsonLd()]}
+      />
       <SiteHeader />
       <section id="check" className="bg-gradient-to-b from-white to-[#f9fafb] py-16 md:py-24 border-b-4 border-[#d97706]">
         <div className="container">
@@ -78,7 +86,7 @@ export default function IndustryLanding() {
             <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-4">What the full report will unlock later</h2>
               <p className="text-[#d1d5db] mb-6">
-                Build 4 validates the AI Visibility + Lead Leak preview flow. The paid report will give specific fixes and a web-person checklist.
+                Build 4A validates the AI Visibility + Lead Leak preview flow. The paid report will give specific fixes and a web-person checklist.
               </p>
               <ul className="space-y-3">
                 <li className="flex gap-2"><CheckCircle2 className="text-green-400" size={18} /> AI Visibility Readiness for {industry.label.toLowerCase()}</li>
@@ -97,17 +105,7 @@ export default function IndustryLanding() {
         </div>
       </section>
 
-      <footer className="bg-[#111827] text-white py-10">
-        <div className="container flex flex-col md:flex-row justify-between gap-4">
-          <div>
-            <p className="font-bold text-lg">Lead Leak Report</p>
-            <p className="text-sm text-[#d1d5db] mt-1">AI visibility + website conversion checks for {industry.pluralLabel.toLowerCase()}.</p>
-          </div>
-          <p className="text-xs text-[#9ca3af] max-w-xl">
-            This report is an informational website review. It does not guarantee rankings, traffic, calls, or revenue.
-          </p>
-        </div>
-      </footer>
+      <PageFooter />
     </div>
   );
 }

@@ -1,92 +1,66 @@
-# Lead Leak Report
+# Lead Leak Report — Build 4A
 
-Phase: **Build 4 — AI Visibility Readiness Layer**
+Build 4A adds the SEO and AI-crawl foundation for the public product site.
 
-This is still a Vite/React prototype with a serverless analyzer endpoint. Build 4 adds an **AI Visibility Readiness** layer on top of the existing Lead Leak preview.
+## What this build includes
 
-The product positioning is now:
-
-> AI Visibility + Lead Leak Report for local service businesses.
-
-It checks whether a local service website gives AI/search systems and customers the clear signals they need to understand, trust, and contact the business.
-
-## What Build 4 includes
-
-- Multi-niche landing pages:
-  - `/roofers`
-  - `/plumbers`
-  - `/electricians`
-  - `/hvac`
-  - `/landscapers`
-  - `/home-services`
-- Business type selector.
-- Firecrawl-enabled homepage reader.
-- Firecrawl screenshot capture when available.
-- Rule-based Lead Leak Score.
-- Rule-based AI Visibility Readiness Score.
-- AI visibility signals:
-  - Entity clarity
-  - Service clarity
-  - Trust and citation readiness
-  - Crawlable content
-  - Local footprint
-- Foundational local SEO preview.
-- Web-person checklist preview.
-- Paid-report recommendation guardrails.
-
-## What Build 4 does not include yet
-
-- No Stripe/payment flow.
-- No PDF generation.
-- No Supabase/database.
-- No login/accounts.
-- No live ranking test in ChatGPT, Gemini, Copilot, or Google AI.
-- No guarantee of AI recommendations, rankings, traffic, calls, or revenue.
-
-The AI Visibility Readiness score is a readiness check. It does not claim to know exactly how AI platforms rank or recommend businesses.
+- AI Visibility + Lead Leak positioning from Build 4.
+- Public content pages:
+  - `/ai-visibility`
+  - `/how-it-works`
+  - `/sample-report`
+  - `/pricing`
+  - `/faq`
+- Updated header and footer internal links.
+- Client-side page metadata updates for public pages.
+- JSON-LD structured data helpers for Organization, WebSite, SoftwareApplication, and FAQPage.
+- Public crawl files:
+  - `/robots.txt`
+  - `/sitemap.xml`
+  - `/llms.txt`
+- Baseline HTML meta tags in `client/index.html`.
+- Existing Firecrawl-based preview flow remains in place.
 
 ## Vercel settings
 
-Use Vite settings, not Next.js.
+Framework Preset: `Vite`
 
-```txt
-Framework Preset: Vite
-Install Command: pnpm install
-Build Command: pnpm build
-Output Directory: dist/public
+Install Command:
+
+```bash
+pnpm install
 ```
 
-## Vercel environment variables
+Build Command:
 
-Recommended:
+```bash
+pnpm build
+```
 
-```txt
+Output Directory:
+
+```bash
+dist/public
+```
+
+## Environment variables
+
+Required for Firecrawl-enhanced analysis:
+
+```bash
 FIRECRAWL_API_KEY=your_firecrawl_api_key
 ```
 
-Fallback supported:
+Fallback name also supported:
 
-```txt
+```bash
 FIRECRAWL_API_TOKEN=your_firecrawl_api_key
 ```
 
-If no Firecrawl key is set, the app still runs using the basic homepage fetch, but the preview is less reliable.
+## SQL migration
 
-## SQL migration needed
+No SQL migration is needed for Build 4A.
 
-No.
+## Notes
 
-## Suggested next build
-
-**Build 5 — AI-assisted full report draft**
-
-Recommended next items:
-
-- Add OpenAI or Claude API report drafting from analyzer findings.
-- Generate draft sections for:
-  - AI Visibility Readiness
-  - Top Lead Leaks
-  - Copy/paste fixes
-  - Local SEO gaps
-  - Web-person checklist
-- Keep Stripe/PDF/database for a later build after report language is trusted.
+This is still a Vite/React prototype. Public metadata is improved, but a future Next.js conversion would be stronger for true server-rendered SEO at scale.
