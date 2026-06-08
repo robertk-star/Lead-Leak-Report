@@ -46,8 +46,8 @@ const checks = [
   },
   {
     icon: ShieldCheck,
-    title: "Foundational Local SEO Gaps",
-    text: "Does the site give customers and Google the basic local signals they expect?",
+    title: "AI Visibility Readiness",
+    text: "Does the site give AI/search systems clear business, service, location, trust, and crawlability signals?",
   },
 ];
 
@@ -61,13 +61,13 @@ export default function Home() {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full bg-[#fff7ed] border border-[#fed7aa] px-4 py-2 text-sm font-semibold text-[#9a3412] mb-6">
-                <Wrench size={16} /> Multi-niche preview is now active
+                <Search size={16} /> AI Visibility + Lead Leak preview is now active
               </div>
               <h1 className="text-4xl md:text-5xl font-bold text-[#1a2332] mb-6 leading-tight">
-                Is your local service website leaking leads?
+                Is your local business ready for AI search?
               </h1>
               <p className="text-lg text-[#374151] mb-8 leading-relaxed">
-                Before you spend more on ads, SEO, or a new website, find out if your current site is making it harder for customers to call, trust you, or request service.
+                See whether your website gives ChatGPT, Gemini, Copilot, Google AI, and homeowners the clear signals they need to understand, trust, and contact your business.
               </p>
               <LeadCheckForm defaultIndustryId="roofing" />
             </div>
@@ -77,7 +77,7 @@ export default function Home() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-bold text-[#6b7280] uppercase">Free Preview</p>
-                    <h2 className="text-xl font-bold text-[#1a2332]">Lead Leak Score</h2>
+                    <h2 className="text-xl font-bold text-[#1a2332]">AI Visibility + Lead Leak Score</h2>
                   </div>
                   <span className="rounded-full bg-[#fee2e2] text-[#991b1b] px-3 py-1 text-xs font-bold">Example</span>
                 </div>
@@ -116,10 +116,10 @@ export default function Home() {
       <section className="py-16 md:py-24 bg-white">
         <div className="container">
           <h2 className="text-3xl md:text-4xl font-bold text-[#1a2332] mb-4 text-center">
-            More traffic does not help if your website leaks the lead.
+            AI tools need clear signals before they can confidently describe your business.
           </h2>
           <p className="text-lg text-[#374151] text-center mb-12 max-w-3xl mx-auto">
-            Lead Leak Report checks the obvious things that affect calls, trust, estimate requests, and basic local visibility.
+            Lead Leak Report now checks both sides: whether AI/search systems can understand your business and whether your website turns visitors into calls or quote requests.
           </p>
           <div className="grid md:grid-cols-3 gap-6">
             <Card className="p-6 border border-[#e5e7eb]">
@@ -134,8 +134,8 @@ export default function Home() {
             </Card>
             <Card className="p-6 border border-[#e5e7eb]">
               <MapPin className="text-[#d97706] mb-4" size={32} />
-              <h3 className="font-bold text-[#1a2332] mb-2">Local clarity is weak</h3>
-              <p className="text-[#374151] text-sm">Customers and search engines need to know what you do and where you work.</p>
+              <h3 className="font-bold text-[#1a2332] mb-2">AI visibility signals are thin</h3>
+              <p className="text-[#374151] text-sm">AI/search systems need crawlable business, service, location, and trust signals before they can understand your company.</p>
             </Card>
           </div>
         </div>
@@ -184,9 +184,10 @@ export default function Home() {
             <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-4">The paid report will be practical, not technical.</h2>
               <p className="text-[#d1d5db] mb-6">
-                Build 1B improves the free preview. The paid report flow comes later with Firecrawl, AI report writing, Stripe, and PDF generation.
+                Build 4 adds AI Visibility Readiness to the free preview. The paid report flow comes later with AI report writing, Stripe, and PDF generation.
               </p>
               <ul className="space-y-3 text-sm text-[#f9fafb]">
+                <li className="flex gap-2"><CheckCircle2 className="text-green-400" size={18} /> AI Visibility Readiness score</li>
                 <li className="flex gap-2"><CheckCircle2 className="text-green-400" size={18} /> Top 5 lead leaks</li>
                 <li className="flex gap-2"><CheckCircle2 className="text-green-400" size={18} /> Copy/paste fixes</li>
                 <li className="flex gap-2"><CheckCircle2 className="text-green-400" size={18} /> Foundational local SEO gaps</li>
@@ -213,8 +214,9 @@ export default function Home() {
           <h2 className="text-3xl md:text-4xl font-bold text-[#1a2332] mb-10 text-center">FAQ</h2>
           <div className="space-y-5">
             {[
-              ["Is this an SEO audit?", "No. It is a conversion-first website preview with basic local SEO checks included."],
-              ["Does Build 1B charge money?", "No. This build is only the improved free preview foundation. Stripe and paid reports come later."],
+              ["Is this an SEO audit?", "No. It is an AI Visibility + Lead Leak preview with foundational local SEO checks included."],
+              ["Does this guarantee ChatGPT will recommend me?", "No. It checks readiness signals AI/search systems can use. It does not guarantee AI rankings, mentions, calls, or revenue."],
+              ["Does Build 4 charge money?", "No. This build is only the free preview foundation. Stripe and paid reports come later."],
               ["What if my site is already strong?", "The preview can show a no-sale recommendation when it does not find enough meaningful issues."],
               ["Do you guarantee more leads?", "No. This is an informational review. Results depend on your website, market, traffic, and implementation."],
             ].map(([question, answer]) => (
@@ -231,7 +233,7 @@ export default function Home() {
         <div className="container flex flex-col md:flex-row justify-between gap-4">
           <div>
             <p className="font-bold text-lg">Lead Leak Report</p>
-            <p className="text-sm text-[#d1d5db] mt-1">Website conversion + local visibility checks for service businesses.</p>
+            <p className="text-sm text-[#d1d5db] mt-1">AI visibility + website conversion checks for service businesses.</p>
           </div>
           <p className="text-xs text-[#9ca3af] max-w-xl">
             This report is an informational website review. It does not guarantee rankings, traffic, calls, or revenue.

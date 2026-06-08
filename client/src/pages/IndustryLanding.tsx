@@ -2,7 +2,7 @@ import LeadCheckForm from "@/components/LeadCheckForm";
 import SiteHeader from "@/components/SiteHeader";
 import { Card } from "@/components/ui/card";
 import { getIndustryBySlug } from "@/data/industries";
-import { AlertCircle, CheckCircle2, FileText, MapPin, Phone, Search, Star } from "lucide-react";
+import { AlertCircle, CheckCircle2, FileText, Phone, Search, Star } from "lucide-react";
 import { useRoute } from "wouter";
 import NotFound from "./NotFound";
 
@@ -26,9 +26,9 @@ export default function IndustryLanding() {
         <div className="container">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <p className="text-sm font-bold uppercase tracking-wide text-[#d97706] mb-4">Lead Leak Report for {industry.pluralLabel}</p>
-              <h1 className="text-4xl md:text-5xl font-bold text-[#1a2332] mb-6 leading-tight">{industry.headline}</h1>
-              <p className="text-lg text-[#374151] mb-8 leading-relaxed">{industry.subheadline}</p>
+              <p className="text-sm font-bold uppercase tracking-wide text-[#d97706] mb-4">AI Visibility + Lead Leak Report for {industry.pluralLabel}</p>
+              <h1 className="text-4xl md:text-5xl font-bold text-[#1a2332] mb-6 leading-tight">Is your {industry.label.toLowerCase()} business ready for AI search?</h1>
+              <p className="text-lg text-[#374151] mb-8 leading-relaxed">See whether your website gives AI/search systems and local customers the clear service, location, trust, and contact signals they need.</p>
               <div className="grid sm:grid-cols-2 gap-4 mb-8">
                 <div className="flex items-start gap-3">
                   <Phone className="text-[#d97706] flex-shrink-0 mt-1" size={20} />
@@ -36,7 +36,7 @@ export default function IndustryLanding() {
                 </div>
                 <div className="flex items-start gap-3">
                   <Search className="text-[#d97706] flex-shrink-0 mt-1" size={20} />
-                  <p className="text-sm text-[#374151]">Check local visibility basics.</p>
+                  <p className="text-sm text-[#374151]">Check AI visibility readiness.</p>
                 </div>
                 <div className="flex items-start gap-3">
                   <Star className="text-[#d97706] flex-shrink-0 mt-1" size={20} />
@@ -55,9 +55,9 @@ export default function IndustryLanding() {
 
       <section className="py-16 md:py-24 bg-white">
         <div className="container">
-          <h2 className="text-3xl md:text-4xl font-bold text-[#1a2332] text-center mb-4">Common {industry.label.toLowerCase()} lead leaks</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-[#1a2332] text-center mb-4">Common {industry.label.toLowerCase()} AI visibility and lead leaks</h2>
           <p className="text-lg text-[#374151] text-center mb-12 max-w-3xl mx-auto">
-            The preview looks for practical issues that can make {industry.customerLabel} hesitate, leave, or choose a competitor.
+            The preview looks for practical issues that can make AI/search systems misunderstand your business or make {industry.customerLabel} hesitate, leave, or choose a competitor.
           </p>
           <div className="grid md:grid-cols-2 gap-5">
             {examples.map((example) => (
@@ -78,9 +78,10 @@ export default function IndustryLanding() {
             <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-4">What the full report will unlock later</h2>
               <p className="text-[#d1d5db] mb-6">
-                Build 1B validates the free preview flow. The paid report will give specific fixes and a web-person checklist.
+                Build 4 validates the AI Visibility + Lead Leak preview flow. The paid report will give specific fixes and a web-person checklist.
               </p>
               <ul className="space-y-3">
+                <li className="flex gap-2"><CheckCircle2 className="text-green-400" size={18} /> AI Visibility Readiness for {industry.label.toLowerCase()}</li>
                 <li className="flex gap-2"><CheckCircle2 className="text-green-400" size={18} /> Top 5 lead leaks for {industry.label.toLowerCase()}</li>
                 <li className="flex gap-2"><CheckCircle2 className="text-green-400" size={18} /> Copy/paste headline and CTA fixes</li>
                 <li className="flex gap-2"><CheckCircle2 className="text-green-400" size={18} /> Foundational local SEO gaps</li>
@@ -100,7 +101,7 @@ export default function IndustryLanding() {
         <div className="container flex flex-col md:flex-row justify-between gap-4">
           <div>
             <p className="font-bold text-lg">Lead Leak Report</p>
-            <p className="text-sm text-[#d1d5db] mt-1">Website conversion + local visibility checks for {industry.pluralLabel.toLowerCase()}.</p>
+            <p className="text-sm text-[#d1d5db] mt-1">AI visibility + website conversion checks for {industry.pluralLabel.toLowerCase()}.</p>
           </div>
           <p className="text-xs text-[#9ca3af] max-w-xl">
             This report is an informational website review. It does not guarantee rankings, traffic, calls, or revenue.

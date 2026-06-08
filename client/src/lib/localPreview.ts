@@ -24,6 +24,22 @@ export type VisualCheck = {
   note: string;
 };
 
+export type AiVisibilitySignal = {
+  label: string;
+  status: "strong" | "needs-review" | "missing";
+  note: string;
+  fix: string;
+};
+
+export type AiVisibilityReadiness = {
+  score: number;
+  label: string;
+  summary: string;
+  signals: AiVisibilitySignal[];
+  gaps: string[];
+  note: string;
+};
+
 export type PreviewResult = {
   inputUrl: string;
   normalizedUrl: string;
@@ -45,6 +61,7 @@ export type PreviewResult = {
   criticalLeakTitle: string;
   summary: string;
   localSeoGaps: string[];
+  aiVisibility: AiVisibilityReadiness;
   webPersonChecklist: string[];
   nextBestAction: string;
 };
@@ -186,6 +203,7 @@ export function buildFallbackPreview(params: {
       "Confirm key service pages exist.",
       "Confirm service areas and local proof are visible.",
     ],
+    aiVisibility: buildFallbackAiVisibility(industry),
     visualChecks: [
       { label: "Homepage screenshot", status: "not-confirmed", note: "No screenshot was captured in fallback preview." },
       { label: "First-screen phone path", status: "needs-review", note: "A live screenshot is needed to confirm whether the phone is visible above the fold." },
@@ -193,6 +211,153 @@ export function buildFallbackPreview(params: {
     ],
     webPersonChecklist: commonWebPersonChecklist(industry),
     nextBestAction: "Run a stronger live scan before asking this visitor to pay.",
+  };
+}
+
+
+function aiVisibilityLabel(score: number) {
+  if (score >= 85) return "AI visibility ready";
+  if (score >= 70) return "AI visibility mostly ready";
+  if (score >= 50) return "AI visibility gaps found";
+  return "Major AI visibility gaps";
+}
+
+function buildFallbackAiVisibility(industry: IndustryConfig): AiVisibilityReadiness {
+  return {
+    score: 55,
+    label: aiVisibilityLabel(55),
+    summary:
+      "The fallback preview cannot verify AI visibility signals yet. A live Firecrawl scan is needed to review entity clarity, services, location, trust, crawlability, and third-party footprint.",
+    signals: [
+      { label: "Entity clarity", status: "needs-review", note: "Business type, city, and contact details need live verification.", fix: "Make the homepage clearly state who the business is, what it does, where it works, and how to contact it." },
+      { label: "Service clarity", status: "needs-review", note: `${industry.label} service pages and service keywords need live verification.`, fix: `Add crawlable service sections/pages for ${industry.serviceKeywords.slice(0, 4).join(", ")}.` },
+      { label: "Trust and citation readiness", status: "needs-review", note: "Reviews, awards, certifications, and third-party profile links need live verification.", fix: "Add review source/count, certifications, warranties, project proof, and trusted third-party links." },
+    ],
+    gaps: [
+      "Run a live scan before making an AI Visibility recommendation.",
+      "Confirm business name, service type, location, trust proof, and crawlable content.",
+    ],
+    note:
+      "AI Visibility Readiness does not test live rankings in ChatGPT, Gemini, Copilot, or Google AI. It checks whether the website provides basic signals those systems can use when understanding local businesses.",
+  };
+}
+
+function aiSignal(label: string, status: AiVisibilitySignal["status"], note: string, fix: string): AiVisibilitySignal {
+  return { label, status, note, fix };
+}
+
+function buildAiVisibilityReadiness(params: {
+  industry: IndustryConfig;
+  visibleContent: string;
+  html: string;
+  text: string;
+  title?: string;
+  description?: string;
+  city: string;
+  hasCity: boolean;
+  hasPhone: boolean;
+  hasTelLink: boolean;
+  primaryCount: number;
+  serviceCount: number;
+  urgentCount: number;
+  localSeoCount: number;
+  hasBasicReviewProof: boolean;
+  hasStrongReviewProof: boolean;
+  hasCertificationProof: boolean;
+  hasProjectProof: boolean;
+  hasFamilyLocalProof: boolean;
+  hasCurrentYear: boolean;
+  hasStaleYear: boolean;
+}): AiVisibilityReadiness {
+  const { industry, visibleContent, html, text, title, description, hasCity, hasPhone, primaryCount, serviceCount, urgentCount, localSeoCount, hasBasicReviewProof, hasStrongReviewProof, hasCertificationProof, hasProjectProof, hasFamilyLocalProof, hasCurrentYear, hasStaleYear } = params;
+  const lowerText = `${visibleContent} ${html}`.toLowerCase();
+  const hasTitleOrMeta = String(title || description || "").trim().length > 20;
+  const hasAboutLink = /href=["'][^"']*about|>\s*about\s*</i.test(html) || /\babout us\b/i.test(visibleContent);
+  const hasContactLink = /href=["'][^"']*contact|>\s*contact\s*</i.test(html) || /\bcontact us\b/i.test(visibleContent);
+  const hasFaq = /\bfaq\b|frequently asked/i.test(text);
+  const hasSchema = /application\/ld\+json|schema\.org|LocalBusiness|Organization|ProfessionalService|HomeAndConstructionBusiness|RoofingContractor|Plumber|Electrician|HVACBusiness/i.test(html);
+  const thirdPartyMatches = lowerText.match(/(google\.com\/maps|g\.page|maps\.app\.goo\.gl|facebook\.com|bbb\.org|yelp\.com|angi\.com|homeadvisor\.com|thumbtack\.com|gaf\.com|owenscorning\.com|certainteed\.com|instagram\.com|linkedin\.com|youtube\.com)/g) || [];
+  const uniqueThirdParty = Array.from(new Set(thirdPartyMatches)).length;
+  const servicePageMatches = (html.match(/href=["'][^"']*(roof|plumb|electric|hvac|heating|cooling|landscap|service|repair|replacement|installation|estimate|quote)[^"']*["']/gi) || []).length;
+  const hasServiceAreaLanguage = /service area|areas served|serving|nearby|surrounding areas|county|neighborhood|zip/i.test(text);
+  const hasAddressSignal = /\b\d{2,6}\s+[a-z0-9 .'-]+\s+(street|st\.?|road|rd\.?|avenue|ave\.?|drive|dr\.?|lane|ln\.?|boulevard|blvd\.?|way|court|ct\.?)\b/i.test(text);
+  const crawlableWordCount = visibleContent.split(/\s+/).filter(Boolean).length;
+
+  let entityScore = 0;
+  if (primaryCount > 0) entityScore += 6;
+  if (hasCity) entityScore += 5;
+  if (hasPhone) entityScore += 4;
+  if (hasContactLink) entityScore += 3;
+  if (hasTitleOrMeta) entityScore += 2;
+
+  let serviceScore = 0;
+  if (serviceCount >= 3) serviceScore += 8;
+  else if (serviceCount >= 1) serviceScore += 4;
+  if (servicePageMatches >= 3) serviceScore += 5;
+  else if (servicePageMatches >= 1) serviceScore += 2;
+  if (localSeoCount >= 2) serviceScore += 4;
+  else if (localSeoCount >= 1) serviceScore += 2;
+  if (urgentCount > 0) serviceScore += 3;
+
+  let trustScore = 0;
+  if (hasStrongReviewProof) trustScore += 7;
+  else if (hasBasicReviewProof) trustScore += 4;
+  if (hasCertificationProof) trustScore += 6;
+  if (hasProjectProof) trustScore += 4;
+  if (hasFamilyLocalProof) trustScore += 3;
+  if (uniqueThirdParty >= 2) trustScore += 5;
+  else if (uniqueThirdParty === 1) trustScore += 2;
+
+  let crawlScore = 0;
+  if (crawlableWordCount >= 600) crawlScore += 7;
+  else if (crawlableWordCount >= 250) crawlScore += 4;
+  if (hasSchema) crawlScore += 5;
+  if (hasAboutLink) crawlScore += 2;
+  if (hasContactLink) crawlScore += 2;
+  if (hasFaq) crawlScore += 2;
+  if (hasCurrentYear || !hasStaleYear) crawlScore += 2;
+
+  let footprintScore = 0;
+  if (uniqueThirdParty >= 3) footprintScore += 7;
+  else if (uniqueThirdParty >= 1) footprintScore += 4;
+  if (hasServiceAreaLanguage) footprintScore += 4;
+  if (hasAddressSignal || hasCity) footprintScore += 4;
+
+  entityScore = Math.min(20, entityScore);
+  serviceScore = Math.min(20, serviceScore);
+  trustScore = Math.min(25, trustScore);
+  crawlScore = Math.min(20, crawlScore);
+  footprintScore = Math.min(15, footprintScore);
+
+  let score = entityScore + serviceScore + trustScore + crawlScore + footprintScore;
+  if (!hasCity) score = Math.min(score, 72);
+  if (primaryCount === 0) score = Math.min(score, 68);
+  if (!hasPhone && !hasContactLink) score = Math.min(score, 66);
+  if (!hasBasicReviewProof && !hasCertificationProof) score = Math.min(score, 78);
+  if (crawlableWordCount < 200) score = Math.min(score, 62);
+
+  const signals = [
+    aiSignal("Entity clarity", entityScore >= 15 ? "strong" : entityScore >= 9 ? "needs-review" : "missing", entityScore >= 15 ? "Business type, location, and contact signals are clear enough for AI/search systems to understand the company." : "The site may not clearly connect business type, location, and contact details in one crawlable place.", "Make the homepage title, headline, phone, and contact page clearly identify the business, service type, and city."),
+    aiSignal("Service clarity", serviceScore >= 15 ? "strong" : serviceScore >= 8 ? "needs-review" : "missing", serviceScore >= 15 ? "Specific service terms and/or service-page links were found." : `AI tools may need clearer service detail for ${industry.label.toLowerCase()} work.`, `Add crawlable service sections/pages for ${industry.serviceKeywords.slice(0, 4).join(", ")}.`),
+    aiSignal("Trust and citation readiness", trustScore >= 18 ? "strong" : trustScore >= 9 ? "needs-review" : "missing", trustScore >= 18 ? "Review, credential, project, or third-party trust signals were found." : "The site may not provide enough visible proof for an AI answer to confidently describe why the company is trustworthy.", "Add review source/count, certifications, warranties, project proof, and links to trusted third-party profiles."),
+    aiSignal("Crawlable content", crawlScore >= 15 ? "strong" : crawlScore >= 8 ? "needs-review" : "missing", crawlScore >= 15 ? "The homepage appears to include enough crawlable text and support pages/signals." : "Important information may be too thin, image-based, or missing structured context.", "Add plain text service summaries, FAQ content, About/Contact links, and LocalBusiness schema where possible."),
+    aiSignal("Local footprint", footprintScore >= 11 ? "strong" : footprintScore >= 6 ? "needs-review" : "missing", footprintScore >= 11 ? "Local/service-area and third-party footprint signals were found." : "AI systems may have limited external/local context for this business from the website alone.", "Add service areas, local project examples, and links to Google Business Profile, BBB, Facebook, and relevant trade/manufacturer profiles."),
+  ];
+
+  const gaps = signals.filter((signal) => signal.status !== "strong").map((signal) => signal.fix);
+  if (gaps.length === 0) gaps.push("Keep AI visibility signals current with recent projects, reviews, service pages, and local proof.");
+
+  return {
+    score,
+    label: aiVisibilityLabel(score),
+    summary: score >= 85
+      ? "The site appears to provide strong basic signals for AI/search systems to understand the business. This does not guarantee recommendations, but the foundation looks solid."
+      : score >= 70
+        ? "The site has some useful AI visibility signals, but a few gaps may limit how confidently AI/search systems understand services, location, or trust."
+        : "The site has meaningful AI visibility gaps. It may not give AI/search tools enough clear business, service, location, trust, and crawlability signals.",
+    signals,
+    gaps: gaps.slice(0, 5),
+    note: "AI Visibility Readiness does not test live rankings in ChatGPT, Gemini, Copilot, or Google AI. It checks whether the website provides the basic signals those systems can use when understanding local businesses.",
   };
 }
 
@@ -519,6 +684,30 @@ export function buildPreviewFromScrape(params: {
     /faq/i.test(text) ? "FAQ content appears to be present." : "Add a short FAQ section answering common local customer questions.",
   ];
 
+  const aiVisibility = buildAiVisibilityReadiness({
+    industry,
+    visibleContent,
+    html: params.html,
+    text,
+    title: params.title || "",
+    description: params.description || "",
+    city,
+    hasCity,
+    hasPhone,
+    hasTelLink,
+    primaryCount,
+    serviceCount,
+    urgentCount,
+    localSeoCount,
+    hasBasicReviewProof,
+    hasStrongReviewProof,
+    hasCertificationProof,
+    hasProjectProof,
+    hasFamilyLocalProof,
+    hasCurrentYear,
+    hasStaleYear,
+  });
+
   return {
     inputUrl: params.url,
     normalizedUrl,
@@ -536,6 +725,7 @@ export function buildPreviewFromScrape(params: {
     criticalLeakTitle: topCriticalTitle(findings),
     summary: recommendationText(paidRecommendation, industry),
     localSeoGaps,
+    aiVisibility,
     visualChecks: [
       { label: "Homepage screenshot", status: "not-confirmed", note: "Screenshot capture is only available from the Firecrawl API response." },
       { label: "First-screen phone path", status: hasPhoneProminent ? "confirmed" : hasPhone ? "needs-review" : "not-confirmed", note: hasPhoneProminent ? "Phone appeared early in the scanned homepage content." : hasPhone ? "Phone was found, but not early enough to treat it as a first-screen call path." : "Phone was not found in the homepage scan." },

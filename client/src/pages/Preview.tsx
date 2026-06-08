@@ -35,6 +35,12 @@ function getCategoryStyles(status: PreviewCategory["status"]) {
   return { bar: "bg-yellow-500", badge: "bg-yellow-100 text-yellow-800", label: "Needs Review" };
 }
 
+function getAiSignalStyles(status: "strong" | "needs-review" | "missing") {
+  if (status === "strong") return { badge: "bg-green-100 text-green-700", label: "Strong" };
+  if (status === "missing") return { badge: "bg-red-100 text-red-700", label: "Missing" };
+  return { badge: "bg-yellow-100 text-yellow-800", label: "Needs Review" };
+}
+
 function getRecommendationBox(result: PreviewResult) {
   if (result.paidRecommendation === "recommended") {
     return {
@@ -293,6 +299,40 @@ export default function Preview() {
           </div>
         </div>
 
+        {result.aiVisibility && (
+          <Card className="bg-white border-2 border-[#2563eb] p-8 mb-10">
+            <div className="flex flex-col lg:flex-row gap-8 lg:items-start">
+              <div className="lg:w-64 text-center lg:text-left">
+                <p className="text-xs font-bold uppercase tracking-wide text-[#2563eb] mb-2">AI Search Readiness</p>
+                <div className="text-6xl font-bold text-[#2563eb] mb-1">{result.aiVisibility.score}</div>
+                <div className="text-sm font-semibold text-[#6b7280] mb-3">/ 100</div>
+                <h3 className="text-xl font-bold text-[#1a2332] mb-2">{result.aiVisibility.label}</h3>
+                <p className="text-sm text-[#374151]">{result.aiVisibility.summary}</p>
+              </div>
+              <div className="flex-1">
+                <div className="mb-5 rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm text-[#1e3a8a]">
+                  <strong>What this means:</strong> This does not test live rankings in ChatGPT, Gemini, Copilot, or Google AI. It checks whether the site gives AI/search systems clear business, service, location, trust, and crawlability signals they can use.
+                </div>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {result.aiVisibility.signals.map((signal) => {
+                    const styles = getAiSignalStyles(signal.status);
+                    return (
+                      <div key={signal.label} className="rounded-lg border border-[#e5e7eb] p-4">
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                          <p className="font-bold text-[#1a2332]">{signal.label}</p>
+                          <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${styles.badge}`}>{styles.label}</span>
+                        </div>
+                        <p className="text-xs text-[#6b7280] mb-3">{signal.note}</p>
+                        <p className="text-xs text-[#374151]"><strong>Fix:</strong> {signal.fix}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
         <Card className="bg-white border border-[#e5e7eb] p-8 mb-10">
           <div className="flex items-center gap-3 mb-4">
             <MonitorSmartphone className="text-[#d97706]" size={24} />
@@ -392,7 +432,7 @@ export default function Preview() {
               <h3 className="text-2xl font-bold mb-3">{recommendationBox.title}</h3>
               <p className="text-[#d1d5db] mb-6">{recommendationBox.body}</p>
               <div className="grid md:grid-cols-2 gap-4 mb-8 bg-[#374151] bg-opacity-50 p-6 rounded-lg">
-                {["Top 5 Lead Leaks", "Copy/Paste Fixes", "Local SEO Gap Check", "Web Person Checklist", "7-Day Fix Plan", "Shareable Report Link"].map((item) => (
+                {["AI Visibility Readiness", "Top 5 Lead Leaks", "Copy/Paste Fixes", "Local SEO Gap Check", "Web Person Checklist", "7-Day Fix Plan", "Shareable Report Link"].map((item) => (
                   <div key={item} className="flex items-start gap-2 text-sm">
                     <CheckCircle2 size={16} className="text-green-400 flex-shrink-0 mt-0.5" />
                     <span>{item}</span>
@@ -408,12 +448,12 @@ export default function Preview() {
         </Card>
 
         <Card className="bg-white border border-[#e5e7eb] p-8">
-          <h3 className="font-bold text-[#1a2332] mb-4">About Build 3</h3>
+          <h3 className="font-bold text-[#1a2332] mb-4">About Build 4</h3>
           <p className="text-[#374151] mb-4">
-            This build adds Firecrawl screenshot capture and first-screen visual review checks. The analyzer still uses rule-based scoring, but the preview can now show a rendered homepage screenshot when Firecrawl returns one, making it easier to compare the automated findings against what a visitor actually sees.
+            This build adds the AI Visibility Readiness layer. It checks whether the site gives AI/search systems clear business, service, location, trust, crawlability, and third-party footprint signals they can use to understand a local service business.
           </p>
           <p className="text-[#374151] mb-4">
-            The next build should add AI-assisted full report drafting from the preview findings. Stripe, PDF generation, report storage, and share links should still wait until the preview and report language are trusted.
+            The next build can add AI-assisted full report drafting from the preview findings. Stripe, PDF generation, report storage, and share links should still wait until the preview and report language are trusted.
           </p>
           <p className="text-sm text-[#6b7280]"><strong>Disclaimer:</strong> This preview is an informational website review. It does not guarantee rankings, traffic, calls, or revenue.</p>
         </Card>
