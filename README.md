@@ -1,66 +1,47 @@
-# Lead Leak Report — Build 4A
+# Lead Leak Report — Next.js Conversion Build
 
-Build 4A adds the SEO and AI-crawl foundation for the public product site.
+This build converts the prior Vite prototype into a Next.js App Router project.
 
-## What this build includes
+## Current status
 
-- AI Visibility + Lead Leak positioning from Build 4.
-- Public content pages:
+- Next.js App Router foundation
+- Public static/SSR-compatible routes for SEO and AI discovery
+- Industry landing pages:
+  - `/roofers`
+  - `/plumbers`
+  - `/electricians`
+  - `/hvac`
+  - `/landscapers`
+  - `/home-services`
+- Content pages:
   - `/ai-visibility`
   - `/how-it-works`
   - `/sample-report`
   - `/pricing`
   - `/faq`
-- Updated header and footer internal links.
-- Client-side page metadata updates for public pages.
-- JSON-LD structured data helpers for Organization, WebSite, SoftwareApplication, and FAQPage.
-- Public crawl files:
-  - `/robots.txt`
-  - `/sitemap.xml`
-  - `/llms.txt`
-- Baseline HTML meta tags in `client/index.html`.
-- Existing Firecrawl-based preview flow remains in place.
+- Analyzer API moved to `/app/api/analyze/route.ts`
+- Firecrawl support preserved
+- `robots.txt`, `sitemap.xml`, and `llms.txt` preserved in `/public`
 
 ## Vercel settings
 
-Framework Preset: `Vite`
-
-Install Command:
-
-```bash
-pnpm install
-```
-
-Build Command:
-
-```bash
-pnpm build
-```
-
-Output Directory:
-
-```bash
-dist/public
-```
+Framework Preset: Next.js
+Install Command: `pnpm install`
+Build Command: `pnpm build`
+Output Directory: leave blank
 
 ## Environment variables
 
-Required for Firecrawl-enhanced analysis:
+`FIRECRAWL_API_KEY=your_firecrawl_api_key`
 
-```bash
-FIRECRAWL_API_KEY=your_firecrawl_api_key
-```
+Fallback supported:
 
-Fallback name also supported:
+`FIRECRAWL_API_TOKEN=your_firecrawl_api_key`
 
-```bash
-FIRECRAWL_API_TOKEN=your_firecrawl_api_key
-```
+## SQL migration needed
 
-## SQL migration
-
-No SQL migration is needed for Build 4A.
+No.
 
 ## Notes
 
-This is still a Vite/React prototype. Public metadata is improved, but a future Next.js conversion would be stronger for true server-rendered SEO at scale.
+This build does not add Stripe, PDFs, accounts, or a database yet.
