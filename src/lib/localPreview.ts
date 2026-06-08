@@ -40,6 +40,21 @@ export type AiVisibilityReadiness = {
   note: string;
 };
 
+export type FullReportDraft = {
+  source: "rules" | "openai";
+  generatedAt: string;
+  executiveSummary: string;
+  aiVisibilitySummary: string;
+  leadLeakSummary: string;
+  localSeoSummary: string;
+  topRecommendations: string[];
+  copyPasteFixes: { label: string; text: string }[];
+  gbpPosts: string[];
+  sevenDayPlan: string[];
+  webPersonChecklist: string[];
+  disclaimer: string;
+};
+
 export type PreviewResult = {
   inputUrl: string;
   normalizedUrl: string;
@@ -64,6 +79,7 @@ export type PreviewResult = {
   aiVisibility: AiVisibilityReadiness;
   webPersonChecklist: string[];
   nextBestAction: string;
+  fullReportDraft?: FullReportDraft;
 };
 
 const phonePattern = /(\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/;

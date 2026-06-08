@@ -395,6 +395,176 @@ function buildPreviewFromScrape({ url, cityState, email, industryId, html, visib
   };
 }
 
+function uniqueList(items) {
+  return [...new Set(items.filter(Boolean).map((item) => String(item).trim()).filter(Boolean))];
+}
+
+function buildRulesFullReportDraft(result) {
+  const industry = result.industry;
+  const primaryService = industry.primaryKeywords?.[0] || industry.label.toLowerCase();
+  const cityState = result.cityState || "the local service area";
+  const findings = Array.isArray(result.findings) ? result.findings : [];
+  const warningFindings = findings.filter((finding) => finding.severity !== "good");
+  const topFindings = warningFindings.length ? warningFindings : findings;
+  const topRecommendations = uniqueList([
+    ...topFindings.slice(0, 5).map((finding) => Array.isArray(finding.fix) ? finding.fix[0] : ""),
+    ...result.localSeoGaps?.filter((gap) => !/^.+was found/i.test(gap)).slice(0, 2) || [],
+  ]).slice(0, 7);
+
+  const copyPasteFixes = [
+    {
+      label: "Homepage headline",
+      text: `${industry.label} services in ${cityState} that make it easy to call, compare, and request help.`,
+    },
+    {
+      label: "Primary CTA",
+      text: industry.id === "roofing" ? "Request a Free Roof Inspection" : industry.id === "plumbing" ? "Schedule Plumbing Service" : industry.id === "hvac" ? "Schedule HVAC Service" : industry.id === "landscaping" ? "Request a Free Landscaping Quote" : "Request Service",
+    },
+    {
+      label: "Trust block",
+      text: `Add a short trust line near the top: Local ${primaryService} help for ${cityState}. Include your review source/count, license or certification details, warranty or guarantee, and recent project proof when available.`,
+    },
+    {
+      label: "AI visibility/entity block",
+      text: `${industry.label} company serving ${cityState}. Services include ${industry.serviceKeywords.slice(0, 4).join(", ")}. Add this in crawlable text near the top of the homepage or About section.`,
+    },
+  ];
+
+  const gbpPosts = [
+    `Need ${industry.serviceKeywords[0] || primaryService} in ${cityState}? Our team helps local customers understand the issue, review options, and request service without pressure.`,
+    `Local project spotlight: Share one recent ${industry.label.toLowerCase()} job, the city served, the problem solved, and one photo that shows the work clearly.`,
+    `Trust reminder: Explain one warranty, certification, review milestone, or experience point that helps customers choose your business with confidence.`,
+    `Seasonal tip: Remind ${industry.customerLabel || "customers"} in ${cityState} what to check this month and invite them to call or request service if they notice a problem.`,
+  ];
+
+  const sevenDayPlan = [
+    "Day 1: Add or improve the phone/call path near the top of the homepage.",
+    "Day 2: Make the main headline clearly state the service and city/service area.",
+    "Day 3: Add visible review proof, star rating, testimonial, certification, or warranty proof near the first screen.",
+    "Day 4: Shorten or clarify the estimate/service request path.",
+    "Day 5: Add service-area and core-service wording in crawlable text for AI/search tools.",
+    "Day 6: Add or update recent project photos, captions, or local proof.",
+    "Day 7: Send the web-person checklist to whoever manages the site and track call/form clicks after changes are made.",
+  ];
+
+  return {
+    source: "rules",
+    generatedAt: new Date().toISOString(),
+    executiveSummary: `This draft report reviewed ${result.normalizedUrl || "the submitted website"} for ${industry.label.toLowerCase()} lead leaks and AI visibility readiness in ${cityState}. The preview score is ${result.score}/100 (${result.label}) and the AI Visibility Readiness score is ${result.aiVisibility?.score ?? "not scored"}/100. The report should focus on practical fixes that help customers and AI/search tools quickly understand who the business is, what it does, where it works, why it can be trusted, and how to contact it.`,
+    aiVisibilitySummary: result.aiVisibility?.summary || "The site was checked for basic entity, service, location, trust, crawlability, and footprint signals that AI/search systems can use to understand a local business.",
+    leadLeakSummary: topFindings[0]?.explanation || "The preview did not find a critical lead leak, but the paid report should still document the highest-value improvements if the report is recommended.",
+    localSeoSummary: `The foundational local SEO review should focus on clear service/city wording, dedicated service pages, service-area proof, FAQs, current business information, and crawlable trust proof. This is not a rankings audit or backlink report.`,
+    topRecommendations,
+    copyPasteFixes,
+    gbpPosts,
+    sevenDayPlan,
+    webPersonChecklist: result.webPersonChecklist || [],
+    disclaimer: "This report is an informational website and AI visibility readiness review. It does not guarantee rankings, AI recommendations, traffic, calls, leads, or revenue.",
+  };
+}
+
+function parseJsonObject(text) {
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {}
+  const match = String(text).match(/\{[\s\S]*\}/);
+  if (!match) return null;
+  try {
+    return JSON.parse(match[0]);
+  } catch {
+    return null;
+  }
+}
+
+async function buildOpenAiFullReportDraft(result) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return null;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+
+  const compactInput = {
+    businessType: result.industry?.label,
+    customerLabel: result.industry?.customerLabel,
+    website: result.normalizedUrl,
+    cityState: result.cityState,
+    leadLeakScore: result.score,
+    leadLeakLabel: result.label,
+    aiVisibilityScore: result.aiVisibility?.score,
+    aiVisibilityLabel: result.aiVisibility?.label,
+    findings: result.findings,
+    categories: result.categories,
+    aiVisibilitySignals: result.aiVisibility?.signals,
+    localSeoGaps: result.localSeoGaps,
+    webPersonChecklist: result.webPersonChecklist,
+    paidRecommendation: result.paidRecommendation,
+  };
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0.25,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "You write concise, practical website conversion and AI visibility readiness reports for local service businesses. Use plain English. Do not guarantee rankings, ChatGPT visibility, traffic, calls, leads, revenue, or outcomes. Do not invent facts not supplied. Return valid JSON only.",
+          },
+          {
+            role: "user",
+            content: `Create a paid-report draft from this preview data. Return JSON with exactly these fields: executiveSummary string, aiVisibilitySummary string, leadLeakSummary string, localSeoSummary string, topRecommendations array of 5-7 strings, copyPasteFixes array of objects with label and text, gbpPosts array of 4 strings, sevenDayPlan array of 7 strings, webPersonChecklist array of strings, disclaimer string.\n\nPreview data:\n${JSON.stringify(compactInput, null, 2)}`,
+          },
+        ],
+      }),
+    });
+
+    clearTimeout(timeout);
+    if (!response.ok) throw new Error(`OpenAI report draft failed with ${response.status}`);
+    const payload = await response.json();
+    const content = payload?.choices?.[0]?.message?.content || "";
+    const parsed = parseJsonObject(content);
+    if (!parsed) throw new Error("OpenAI returned non-JSON report draft");
+    return {
+      source: "openai",
+      generatedAt: new Date().toISOString(),
+      executiveSummary: String(parsed.executiveSummary || ""),
+      aiVisibilitySummary: String(parsed.aiVisibilitySummary || ""),
+      leadLeakSummary: String(parsed.leadLeakSummary || ""),
+      localSeoSummary: String(parsed.localSeoSummary || ""),
+      topRecommendations: Array.isArray(parsed.topRecommendations) ? parsed.topRecommendations.map(String).slice(0, 7) : [],
+      copyPasteFixes: Array.isArray(parsed.copyPasteFixes)
+        ? parsed.copyPasteFixes.slice(0, 6).map((item) => ({ label: String(item?.label || "Fix"), text: String(item?.text || "") })).filter((item) => item.text)
+        : [],
+      gbpPosts: Array.isArray(parsed.gbpPosts) ? parsed.gbpPosts.map(String).slice(0, 4) : [],
+      sevenDayPlan: Array.isArray(parsed.sevenDayPlan) ? parsed.sevenDayPlan.map(String).slice(0, 7) : [],
+      webPersonChecklist: Array.isArray(parsed.webPersonChecklist) ? parsed.webPersonChecklist.map(String).slice(0, 12) : [],
+      disclaimer: String(parsed.disclaimer || "This report is informational and does not guarantee rankings, AI recommendations, traffic, calls, leads, or revenue."),
+    };
+  } catch (error) {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function attachFullReportDraft(result) {
+  const rulesDraft = buildRulesFullReportDraft(result);
+  const openAiDraft = await buildOpenAiFullReportDraft(result);
+  result.fullReportDraft = openAiDraft || rulesDraft;
+  result.fullReportDraft.source = openAiDraft ? "openai" : "rules";
+  return result;
+}
+
 async function scrapeWithFirecrawl(normalizedUrl) {
   const apiKey = process.env.FIRECRAWL_API_KEY || process.env.FIRECRAWL_API_TOKEN;
   if (!apiKey) return null;
@@ -568,6 +738,8 @@ export default async function handler(req, res) {
 
   result.scrapeSource = scrapeSource;
   result.firecrawlConfigured = firecrawlConfigured;
+
+  await attachFullReportDraft(result);
 
   res.status(200).json(result);
 }

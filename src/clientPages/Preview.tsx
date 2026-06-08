@@ -427,6 +427,84 @@ export default function Preview() {
           </Card>
         </div>
 
+
+        {result.fullReportDraft && (
+          <Card className="bg-white border border-[#e5e7eb] p-8 mb-10">
+            <div className="flex items-center gap-3 mb-2">
+              <FileText className="text-[#d97706]" size={24} />
+              <h3 className="font-bold text-[#1a2332]">AI-Assisted Full Report Draft</h3>
+            </div>
+            <p className="text-sm text-[#6b7280] mb-6">
+              Build 5 drafts the paid-report content from the preview findings. Source: {result.fullReportDraft.source === "openai" ? "OpenAI-assisted draft" : "rule-based fallback draft"}. Payments, PDF generation, report storage, and share links are still not enabled.
+            </p>
+
+            <div className="grid lg:grid-cols-2 gap-6 mb-6">
+              <div className="rounded-lg border border-[#e5e7eb] p-5 bg-[#f9fafb]">
+                <p className="text-xs font-bold uppercase text-[#6b7280] mb-2">Executive Summary</p>
+                <p className="text-sm text-[#374151] leading-relaxed">{result.fullReportDraft.executiveSummary}</p>
+              </div>
+              <div className="rounded-lg border border-[#e5e7eb] p-5 bg-[#f9fafb]">
+                <p className="text-xs font-bold uppercase text-[#6b7280] mb-2">AI Visibility Summary</p>
+                <p className="text-sm text-[#374151] leading-relaxed">{result.fullReportDraft.aiVisibilitySummary}</p>
+              </div>
+              <div className="rounded-lg border border-[#e5e7eb] p-5 bg-[#f9fafb]">
+                <p className="text-xs font-bold uppercase text-[#6b7280] mb-2">Lead Leak Summary</p>
+                <p className="text-sm text-[#374151] leading-relaxed">{result.fullReportDraft.leadLeakSummary}</p>
+              </div>
+              <div className="rounded-lg border border-[#e5e7eb] p-5 bg-[#f9fafb]">
+                <p className="text-xs font-bold uppercase text-[#6b7280] mb-2">Local SEO Summary</p>
+                <p className="text-sm text-[#374151] leading-relaxed">{result.fullReportDraft.localSeoSummary}</p>
+              </div>
+            </div>
+
+            <div className="grid lg:grid-cols-2 gap-6 mb-6">
+              <div>
+                <h4 className="font-bold text-[#1a2332] mb-3">Top Recommendations</h4>
+                <ul className="space-y-2 text-sm text-[#374151]">
+                  {result.fullReportDraft.topRecommendations.map((item, index) => (
+                    <li key={`${item}-${index}`} className="flex gap-2"><CheckCircle2 className="text-[#d97706] flex-shrink-0 mt-0.5" size={16} /> {item}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-bold text-[#1a2332] mb-3">7-Day Fix Plan</h4>
+                <ul className="space-y-2 text-sm text-[#374151]">
+                  {result.fullReportDraft.sevenDayPlan.map((item, index) => (
+                    <li key={`${item}-${index}`} className="flex gap-2"><CheckCircle2 className="text-[#d97706] flex-shrink-0 mt-0.5" size={16} /> {item}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h4 className="font-bold text-[#1a2332] mb-3">Copy/Paste Fixes</h4>
+              <div className="grid md:grid-cols-2 gap-4">
+                {result.fullReportDraft.copyPasteFixes.map((fix, index) => (
+                  <div key={`${fix.label}-${index}`} className="rounded-lg border border-[#e5e7eb] p-4">
+                    <p className="text-sm font-bold text-[#1a2332] mb-2">{fix.label}</p>
+                    <p className="text-sm text-[#374151]">{fix.text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="mb-6">
+              <h4 className="font-bold text-[#1a2332] mb-3">Google Business Profile Freshness Ideas</h4>
+              <div className="grid md:grid-cols-2 gap-4">
+                {result.fullReportDraft.gbpPosts.map((post, index) => (
+                  <div key={`${post}-${index}`} className="rounded-lg border border-[#e5e7eb] p-4 text-sm text-[#374151]">
+                    {post}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-[#e5e7eb] bg-[#f9fafb] p-4 text-xs text-[#6b7280]">
+              <strong>Draft disclaimer:</strong> {result.fullReportDraft.disclaimer}
+            </div>
+          </Card>
+        )}
+
         <Card className={`bg-gradient-to-br from-[#1a2332] to-[#2d3e52] border-2 ${recommendationBox.tone} p-8 md:p-12 text-white mb-10`}>
           <div className="flex items-start gap-6">
             <Lock className="text-[#d97706] flex-shrink-0 mt-1" size={32} />
@@ -450,12 +528,12 @@ export default function Preview() {
         </Card>
 
         <Card className="bg-white border border-[#e5e7eb] p-8">
-          <h3 className="font-bold text-[#1a2332] mb-4">About Build 4A</h3>
+          <h3 className="font-bold text-[#1a2332] mb-4">About Build 5</h3>
           <p className="text-[#374151] mb-4">
-            This build adds the AI Visibility Readiness layer. It checks whether the site gives AI/search systems clear business, service, location, trust, crawlability, and third-party footprint signals they can use to understand a local service business.
+            This build adds AI-assisted full report drafting on top of the AI Visibility Readiness and Lead Leak preview layers. When OPENAI_API_KEY is configured, the app drafts plain-English report sections from the rule-based findings. Without OpenAI, it uses a rule-based fallback draft.
           </p>
           <p className="text-[#374151] mb-4">
-            The next build can add AI-assisted full report drafting from the preview findings. Stripe, PDF generation, report storage, and share links should still wait until the preview and report language are trusted.
+            Stripe, PDF generation, report storage, and share links are still not enabled. The next phase should add payment gating and report persistence after the report draft language is trusted.
           </p>
           <p className="text-sm text-[#6b7280]"><strong>Disclaimer:</strong> This preview is an informational website review. It does not guarantee rankings, traffic, calls, or revenue.</p>
         </Card>
