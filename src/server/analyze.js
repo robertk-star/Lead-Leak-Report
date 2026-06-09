@@ -31,6 +31,301 @@ const aiVisibilityLabel = (score) => score >= 85 ? "On-site AI readiness strong"
 const offsiteVisibilityLabel = (score) => score >= 85 ? "Off-site AI visibility verified strong" : score >= 70 ? "Off-site signals found — verify manually" : score >= 50 ? "Off-site visibility gaps found" : "Manual off-site verification needed";
 const aiSignal = (label, status, note, fix) => ({ label, status, note, fix });
 
+const safeUrlHost = (value = "") => {
+  try {
+    return new URL(value).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return "";
+  }
+};
+
+const extractBusinessNameFromTitle = (title = "", domain = "") => {
+  const cleaned = String(title || "")
+    .split(/\s[-|•–—:]\s/)[0]
+    .replace(/\b(home|homepage|official site|website)\b/gi, "")
+    .trim();
+  if (cleaned.length >= 3 && cleaned.length <= 80) return cleaned;
+  const host = String(domain || "").replace(/^www\./, "").split(".")[0] || "Business";
+  return host.replace(/[-_]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+};
+
+const compactSearchResult = (item = {}) => ({
+  title: String(item.title || item.name || "").slice(0, 180),
+  link: String(item.link || item.website || item.place_id || "").slice(0, 260),
+  source: safeUrlHost(item.link || item.website || ""),
+  snippet: String(item.snippet || item.description || item.address || "").slice(0, 280),
+  rating: item.rating || item.reviews || item.reviews_original || null,
+});
+
+async function runSerpApiSearches({ businessName, cityState, industry, websiteUrl }) {
+  const apiKey = process.env.SERPAPI_API_KEY || process.env.SERP_API_KEY;
+  const configured = Boolean(apiKey);
+  if (!configured) {
+    return {
+      configured: false,
+      used: false,
+      provider: "serpapi",
+      queries: [],
+      results: [],
+      error: "SERPAPI_API_KEY is not configured.",
+    };
+  }
+
+  const city = String(cityState || "").split(",")[0]?.trim() || cityState || "";
+  const domain = safeUrlHost(websiteUrl);
+  const industryQuery = industry.id === "home-services" ? "home service company" : industry.pluralLabel || industry.label;
+  const rawQueries = [
+    `${businessName} ${cityState}`,
+    `${businessName} reviews`,
+    `${businessName} BBB Facebook Angi Yelp`,
+    `best ${industryQuery} in ${city || cityState}`,
+    `${businessName} ${domain}`,
+  ];
+  const queries = [...new Set(rawQueries.map((query) => query.replace(/\s+/g, " ").trim()).filter(Boolean))].slice(0, 5);
+  const results = [];
+  const errors = [];
+
+  for (const query of queries) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 14000);
+    try {
+      const params = new URLSearchParams({
+        engine: "google",
+        q: query,
+        api_key: apiKey,
+        num: "10",
+      });
+      const response = await fetch(`https://serpapi.com/search.json?${params.toString()}`, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      if (!response.ok) {
+        const text = await response.text().catch(() => "");
+        throw new Error(`SerpAPI returned ${response.status}: ${text.slice(0, 120)}`);
+      }
+      const payload = await response.json();
+      const organic = Array.isArray(payload.organic_results) ? payload.organic_results.slice(0, 8).map(compactSearchResult) : [];
+      const local = Array.isArray(payload.local_results?.places) ? payload.local_results.places.slice(0, 5).map(compactSearchResult) : [];
+      const place = payload.place_results ? [compactSearchResult(payload.place_results)] : [];
+      const knowledge = payload.knowledge_graph ? [compactSearchResult(payload.knowledge_graph)] : [];
+      results.push({ query, organic, local, place, knowledge });
+    } catch (error) {
+      errors.push(`${query}: ${error instanceof Error ? error.message : "Search failed"}`);
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  return {
+    configured: true,
+    used: results.length > 0,
+    provider: "serpapi",
+    queries,
+    results,
+    error: errors.slice(0, 3).join(" | "),
+  };
+}
+
+function evaluateSearchEvidence({ searchData, businessName, cityState, industry, websiteUrl }) {
+  const domain = safeUrlHost(websiteUrl);
+  const businessTokens = String(businessName || "").toLowerCase().split(/\s+/).filter((token) => token.length > 2).slice(0, 4);
+  const allResults = (searchData.results || []).flatMap((group) => [
+    ...(group.place || []).map((item) => ({ ...item, query: group.query, kind: "place" })),
+    ...(group.local || []).map((item) => ({ ...item, query: group.query, kind: "local" })),
+    ...(group.knowledge || []).map((item) => ({ ...item, query: group.query, kind: "knowledge" })),
+    ...(group.organic || []).map((item) => ({ ...item, query: group.query, kind: "organic" })),
+  ]);
+  const haystack = allResults.map((item) => `${item.title} ${item.source} ${item.snippet} ${item.link}`).join("\n").toLowerCase();
+  const resultMatchesBrand = (item) => {
+    const text = `${item.title} ${item.snippet} ${item.link}`.toLowerCase();
+    return businessTokens.length ? businessTokens.some((token) => text.includes(token)) : false;
+  };
+  const domainResults = allResults.filter((item) => domain && (item.source === domain || item.link.toLowerCase().includes(domain)));
+  const brandResults = allResults.filter(resultMatchesBrand);
+  const googleBusinessFound = allResults.some((item) => ["place", "local", "knowledge"].includes(item.kind) && resultMatchesBrand(item));
+  const reviewSources = [
+    ["Google/local result", googleBusinessFound],
+    ["BBB", /bbb\.org|better business bureau/i.test(haystack)],
+    ["Facebook", /facebook\.com/i.test(haystack)],
+    ["Angi/HomeAdvisor/Thumbtack", /angi\.com|homeadvisor\.com|thumbtack\.com/i.test(haystack)],
+    ["Yelp", /yelp\.com/i.test(haystack)],
+    ["BirdEye", /birdeye\.com/i.test(haystack)],
+  ].filter(([, found]) => found).map(([label]) => label);
+  const editorialSources = allResults.filter((item) => /expertise\.com|cityview|best of|top .* in|best .* in|forbes|this old house|angi\.com\/articles/i.test(`${item.title} ${item.source} ${item.snippet}`));
+  const manufacturerSources = allResults.filter((item) => /gaf\.com|owenscorning\.com|certainteed\.com|iko\.com|tamko\.com/i.test(`${item.link} ${item.source} ${item.snippet}`));
+  const entityMismatchTerms = ["construction", "exteriors", "remodeling", "siding"];
+  const mismatchHits = brandResults.filter((item) => entityMismatchTerms.some((term) => `${item.title} ${item.snippet}`.toLowerCase().includes(term)) && industry.id === "roofing" && !String(businessName).toLowerCase().includes("construction"));
+  const differentiatorRegex = /(one[- ]day|same[- ]day|24\/7|top 1%|platinum|master elite|select shinglemaster|\d+\+? years|thousands of|award[- ]winning|best of|family owned|locally owned)/i;
+  const differentiatorFound = allResults.find((item) => differentiatorRegex.test(`${item.title} ${item.snippet}`));
+
+  let gbpScore = googleBusinessFound ? 24 : 0;
+  let reviewScore = Math.min(24, reviewSources.length * 5 + (googleBusinessFound ? 6 : 0));
+  let citationScore = Math.min(18, brandResults.length * 2 + domainResults.length * 2 + reviewSources.length * 2);
+  let editorialScore = Math.min(16, editorialSources.length * 8);
+  let manufacturerScore = Math.min(8, manufacturerSources.length * 4);
+  let entityScore = Math.min(10, (domainResults.length ? 5 : 0) + (brandResults.length >= 3 ? 3 : brandResults.length ? 1 : 0) + (mismatchHits.length ? -4 : 2));
+  let differentiatorScore = differentiatorFound ? 8 : 0;
+
+  let score = Math.max(0, Math.min(100, gbpScore + reviewScore + citationScore + editorialScore + manufacturerScore + entityScore + differentiatorScore));
+  if (!googleBusinessFound) score = Math.min(score, 58);
+  if (!reviewSources.length) score = Math.min(score, 54);
+  if (!domainResults.length) score = Math.min(score, 72);
+  if (mismatchHits.length) score = Math.min(score, 52);
+
+  const evidence = [
+    {
+      label: "Search queries run",
+      status: searchData.used ? "found" : "not-found",
+      detail: (searchData.queries || []).join(" | "),
+    },
+    {
+      label: "Google Business Profile / local pack",
+      status: googleBusinessFound ? "found" : "not-found",
+      detail: googleBusinessFound ? "A matching local/knowledge result appeared in the live search results." : "No matching local/knowledge result was confirmed from the live search results.",
+    },
+    {
+      label: "Review platforms found",
+      status: reviewSources.length ? "found" : "not-found",
+      detail: reviewSources.length ? reviewSources.join(", ") : "No major review platform result was confirmed from the live search results.",
+    },
+    {
+      label: "Editorial / best-of mentions",
+      status: editorialSources.length ? "found" : "needs-review",
+      detail: editorialSources.length ? editorialSources.slice(0, 3).map((item) => item.title || item.source).join(" | ") : "No best-of/editorial result was confirmed in the live search results.",
+    },
+    {
+      label: "Brand/entity consistency",
+      status: mismatchHits.length ? "needs-review" : domainResults.length || brandResults.length ? "found" : "not-found",
+      detail: mismatchHits.length ? `Possible name/entity mismatch in search results: ${mismatchHits.slice(0, 2).map((item) => item.title).join(" | ")}` : domainResults.length ? `Official domain found in ${domainResults.length} result(s).` : "Official domain was not confirmed in the live search result set.",
+    },
+    {
+      label: "Manufacturer / trade directory presence",
+      status: manufacturerSources.length ? "found" : "needs-review",
+      detail: manufacturerSources.length ? manufacturerSources.slice(0, 3).map((item) => item.source || item.title).join(" | ") : "No manufacturer/trade directory result was confirmed in the live search results.",
+    },
+    {
+      label: "AI-repeatable differentiator",
+      status: differentiatorFound ? "found" : "needs-review",
+      detail: differentiatorFound ? `${differentiatorFound.title}: ${differentiatorFound.snippet}`.slice(0, 260) : "No clear proof-based differentiator was confirmed in live search snippets.",
+    },
+  ];
+
+  const signals = [
+    aiSignal("Google Business Profile visibility", googleBusinessFound ? "strong" : "missing", googleBusinessFound ? "Live search found a matching local/knowledge result." : "Live search did not confirm a matching Google Business Profile/local result.", "Verify the Google Business Profile exists under the same business name, points to this website, and has visible reviews."),
+    aiSignal("Review platform consistency", reviewSources.length >= 3 && !mismatchHits.length ? "strong" : reviewSources.length ? "needs-review" : "missing", reviewSources.length ? `Live search found: ${reviewSources.join(", ")}.` : "Live search did not confirm major review-platform results.", "Make sure Google, BBB, Facebook, Angi, Yelp, BirdEye, and other review profiles use the same business name, phone, website, and service area."),
+    aiSignal("Editorial / best-of citations", editorialSources.length ? "strong" : "missing", editorialSources.length ? "Live search found editorial/best-of style mentions." : "No editorial/best-of mention was confirmed in live search results.", `Pursue credible local best-of lists, trade directories, awards, and “best ${industry.pluralLabel || industry.label} in ${String(cityState).split(",")[0] || "your city"}” pages that AI tools may cite.`),
+    aiSignal("Third-party citation footprint", brandResults.length >= 6 ? "strong" : brandResults.length >= 2 ? "needs-review" : "missing", `Live search found ${brandResults.length} brand-related result(s) and ${domainResults.length} official-domain result(s).`, "Build and link trusted profiles such as Google Business Profile, BBB, Facebook, Yelp, Angi/HomeAdvisor/Thumbtack, manufacturer directories, and local chamber/trade listings."),
+    aiSignal("Schema / sameAs entity alignment", "needs-review", "Live search helps confirm outside sources; schema/sameAs must still be checked on the site.", "Add LocalBusiness/ProfessionalService schema with sameAs links to official review, social, and directory profiles."),
+    aiSignal("AI-repeatable differentiator", differentiatorFound ? "strong" : "needs-review", differentiatorFound ? "Live search found a proof-style differentiator in search snippets." : "Live search did not confirm a concise differentiator AI tools could repeat.", "State one clear proof-based differentiator in crawlable text and reinforce it across Google Business Profile, reviews, directories, and editorial sources."),
+  ];
+
+  const gaps = signals.filter((signal) => signal.status !== "strong").map((signal) => signal.fix);
+  if (mismatchHits.length) gaps.unshift("Possible entity mismatch: search results may associate reviews or profiles with a different business name. Consolidate listings under one entity.");
+  if (!googleBusinessFound) gaps.unshift("Verify or create a Google Business Profile under the exact same business name used on the website.");
+
+  return {
+    score,
+    label: offsiteVisibilityLabel(score),
+    summary: searchData.used
+      ? "Build 7 used live Google search results through SerpAPI to check off-site/entity signals, including local profile presence, review platforms, citations, editorial mentions, brand consistency, and differentiators."
+      : "SerpAPI was configured but no usable search results were returned. Manual off-site verification is still needed.",
+    signals,
+    gaps: gaps.slice(0, 7),
+    note: "This is still an AI visibility readiness score. It uses live search evidence, but it does not guarantee ChatGPT, Gemini, Copilot, Google AI, rankings, traffic, calls, leads, or revenue.",
+    evidence,
+    searchProvider: "serpapi",
+    searchQueries: searchData.queries || [],
+    liveChecked: true,
+    configured: true,
+  };
+}
+
+function mergeOffsiteWithSearch(result, searchData) {
+  result.serpapiConfigured = Boolean(searchData.configured);
+  result.serpapiUsed = Boolean(searchData.used);
+  if (searchData.error) result.serpapiError = searchData.error;
+
+  if (!searchData.used) {
+    result.offsiteVisibility = {
+      ...(result.offsiteVisibility || {}),
+      evidence: [
+        {
+          label: "Live search status",
+          status: searchData.configured ? "needs-review" : "not-found",
+          detail: searchData.configured ? `SerpAPI was configured but returned no usable results. ${searchData.error || ""}` : "SERPAPI_API_KEY is not configured, so Build 7 live off-site checks did not run.",
+        },
+      ],
+      searchProvider: "serpapi",
+      searchQueries: searchData.queries || [],
+      liveChecked: false,
+      configured: Boolean(searchData.configured),
+    };
+    result.overallAiVisibility = {
+      ...(result.overallAiVisibility || {}),
+      summary: `${result.overallAiVisibility?.summary || ""} Build 7 live search was not completed for this run.`.trim(),
+    };
+    return result;
+  }
+
+  const domain = safeUrlHost(result.normalizedUrl || result.inputUrl || "");
+  const businessName = extractBusinessNameFromTitle(result.siteTitle || "", domain);
+  const liveOffsite = evaluateSearchEvidence({
+    searchData,
+    businessName,
+    cityState: result.cityState,
+    industry: result.industry,
+    websiteUrl: result.normalizedUrl || result.inputUrl,
+  });
+
+  result.offsiteVisibility = liveOffsite;
+  let overallAiVisibilityScore = Math.round((Number(result.aiVisibility?.score || 0) * 0.35) + (liveOffsite.score * 0.65));
+  if (liveOffsite.score < 65) overallAiVisibilityScore = Math.min(overallAiVisibilityScore, 68);
+  if (liveOffsite.score < 50) overallAiVisibilityScore = Math.min(overallAiVisibilityScore, 58);
+  result.overallAiVisibility = {
+    score: overallAiVisibilityScore,
+    label: overallAiVisibilityScore >= 85 ? "Overall AI visibility verified strong" : overallAiVisibilityScore >= 70 ? "Overall AI visibility mostly ready" : overallAiVisibilityScore >= 50 ? "Overall AI visibility gaps found" : "Major overall AI visibility gaps",
+    summary: "This combines on-site readiness with live off-site/entity consistency evidence from SerpAPI search results. Off-site evidence is weighted more heavily because AI recommendations often rely on Google Business Profile, reviews, citations, awards, and brand consistency.",
+  };
+
+  const offsiteFindings = [];
+  const gbp = liveOffsite.evidence.find((item) => item.label.includes("Google Business"));
+  const entity = liveOffsite.evidence.find((item) => item.label.includes("Brand/entity"));
+  const editorial = liveOffsite.evidence.find((item) => item.label.includes("Editorial"));
+  if (gbp?.status === "not-found") {
+    offsiteFindings.push({
+      title: "Live search did not confirm a Google Business Profile",
+      severity: "warning",
+      category: "Off-Site AI Visibility",
+      explanation: "AI/search systems often rely on local profile and review signals when recommending service businesses.",
+      evidence: gbp.detail,
+      fix: ["Verify the Google Business Profile exists under the same business name.", "Make sure the profile links to the website.", "Build reviews under the same entity name."],
+    });
+  }
+  if (entity?.status === "needs-review") {
+    offsiteFindings.push({
+      title: "Possible brand/entity consistency issue found in live search",
+      severity: "warning",
+      category: "Off-Site AI Visibility",
+      explanation: "If reviews or citations are attached to a different business name, AI tools may not connect them to the website cleanly.",
+      evidence: entity.detail,
+      fix: ["Consolidate public profiles under one business name.", "Use the same website, phone, and service area across profiles.", "Add sameAs schema links to official profiles."],
+    });
+  }
+  if (editorial?.status !== "found") {
+    offsiteFindings.push({
+      title: "No best-of/editorial citation confirmed in live search",
+      severity: "warning",
+      category: "Off-Site AI Visibility",
+      explanation: "Editorial and best-of pages can be cited by AI answer engines when users ask who to hire.",
+      evidence: editorial?.detail || "No editorial result found.",
+      fix: ["Pitch local best-of lists and awards.", "Build manufacturer/trade directory listings.", "Create proof-based content that makes the business easier to cite."],
+    });
+  }
+
+  result.findings = [...offsiteFindings, ...(result.findings || [])].slice(0, 6);
+  result.criticalLeakTitle = topCriticalTitle(result.findings);
+  return result;
+}
 function buildAiVisibilityReadiness({ industry, visibleContent, html, text, title, description, city, hasCity, hasPhone, hasTelLink, primaryCount, serviceCount, urgentCount, localSeoCount, hasBasicReviewProof, hasStrongReviewProof, hasCertificationProof, hasProjectProof, hasFamilyLocalProof, hasCurrentYear, hasStaleYear }) {
   const lowerText = `${visibleContent} ${html}`.toLowerCase();
   const hasTitleOrMeta = String(title || description || "").trim().length > 20;
@@ -539,6 +834,7 @@ function buildPreviewFromScrape({ url, cityState, email, industryId, html, visib
   return {
     inputUrl: url,
     normalizedUrl,
+    siteTitle: title || "",
     cityState,
     email,
     industry,
@@ -681,6 +977,9 @@ async function buildOpenAiFullReportDraft(result) {
     categories: result.categories,
     onSiteAiVisibilitySignals: result.aiVisibility?.signals,
     offsiteVisibilitySignals: result.offsiteVisibility?.signals,
+    offsiteSearchEvidence: result.offsiteVisibility?.evidence,
+    serpapiUsed: result.serpapiUsed,
+    serpapiError: result.serpapiError,
     localSeoGaps: result.localSeoGaps,
     webPersonChecklist: result.webPersonChecklist,
     paidRecommendation: result.paidRecommendation,
@@ -922,6 +1221,16 @@ export default async function handler(req, res) {
 
   result.scrapeSource = scrapeSource;
   result.firecrawlConfigured = firecrawlConfigured;
+
+  const searchDomain = safeUrlHost(result.normalizedUrl || normalizedUrl);
+  const businessName = extractBusinessNameFromTitle(result.siteTitle || scrapeData.title || "", searchDomain);
+  const serpApiData = await runSerpApiSearches({
+    businessName,
+    cityState,
+    industry: result.industry,
+    websiteUrl: result.normalizedUrl || normalizedUrl,
+  });
+  mergeOffsiteWithSearch(result, serpApiData);
 
   await attachFullReportDraft(result);
 

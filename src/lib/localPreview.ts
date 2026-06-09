@@ -47,6 +47,14 @@ export type OffsiteVisibilitySignal = {
   fix: string;
 };
 
+export type OffsiteVisibilityEvidence = {
+  label: string;
+  status: "found" | "needs-review" | "not-found";
+  detail: string;
+  source?: string;
+  url?: string;
+};
+
 export type OffsiteVisibilityReadiness = {
   score: number;
   label: string;
@@ -54,6 +62,11 @@ export type OffsiteVisibilityReadiness = {
   signals: OffsiteVisibilitySignal[];
   gaps: string[];
   note: string;
+  evidence?: OffsiteVisibilityEvidence[];
+  searchProvider?: string;
+  searchQueries?: string[];
+  liveChecked?: boolean;
+  configured?: boolean;
 };
 
 export type FullReportDraft = {
@@ -98,6 +111,9 @@ export type PreviewResult = {
   webPersonChecklist: string[];
   nextBestAction: string;
   fullReportDraft?: FullReportDraft;
+  serpapiConfigured?: boolean;
+  serpapiUsed?: boolean;
+  serpapiError?: string;
 };
 
 const phonePattern = /(\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/;

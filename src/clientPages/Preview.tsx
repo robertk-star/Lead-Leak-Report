@@ -331,7 +331,7 @@ export default function Preview() {
               </div>
               <div className="flex-1">
                 <div className="mb-5 rounded-lg border border-purple-100 bg-purple-50 p-4 text-sm text-[#4c1d95]">
-                  <strong>What this means:</strong> Build 6A is conservative. This section checks whether the website exposes or links to outside signals AI/search systems can use to verify the business, but it does not yet run live Google/Maps/review-platform searches. Treat this as a manual verification checklist until Build 7 adds a search API.
+                  <strong>What this means:</strong> Build 7 can use live Google search data through SerpAPI when <code>SERPAPI_API_KEY</code> is configured. It checks for Google/local profile signals, review platforms, third-party citations, best-of/editorial mentions, manufacturer/trade listings, entity consistency, and AI-repeatable differentiators.
                 </div>
                 {result.offsiteVisibility.gaps?.length ? (
                   <div className="mb-5 rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-900">
@@ -341,6 +341,26 @@ export default function Preview() {
                         <li key={gap}>{gap}</li>
                       ))}
                     </ul>
+                  </div>
+                ) : null}
+                {result.offsiteVisibility.evidence?.length ? (
+                  <div className="mb-5 rounded-lg border border-purple-200 bg-white p-4 text-sm text-[#374151]">
+                    <p className="font-bold text-[#1a2332] mb-3">Live off-site search evidence</p>
+                    <div className="space-y-3">
+                      {result.offsiteVisibility.evidence.slice(0, 7).map((item, index) => {
+                        const badge = item.status === "found" ? "bg-green-100 text-green-700" : item.status === "needs-review" ? "bg-yellow-100 text-yellow-800" : "bg-red-100 text-red-700";
+                        const label = item.status === "found" ? "Found" : item.status === "needs-review" ? "Needs review" : "Not found";
+                        return (
+                          <div key={`${item.label}-${index}`} className="rounded-md border border-[#e5e7eb] p-3">
+                            <div className="flex items-start justify-between gap-3 mb-1">
+                              <p className="font-semibold text-[#1a2332]">{item.label}</p>
+                              <span className={`rounded-full px-2 py-1 text-[10px] font-bold ${badge}`}>{label}</span>
+                            </div>
+                            <p className="text-xs text-[#374151]">{item.detail}</p>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 ) : null}
                 <div className="grid md:grid-cols-2 gap-4">
@@ -497,7 +517,7 @@ export default function Preview() {
               <h3 className="font-bold text-[#1a2332]">AI-Assisted Full Report Draft</h3>
             </div>
             <p className="text-sm text-[#6b7280] mb-6">
-              Build 6 drafts the paid-report content and separates on-site AI readiness from off-site/entity visibility from the preview findings. Source: {result.fullReportDraft.source === "openai" ? "OpenAI-assisted draft" : "rule-based fallback draft"}. Payments, PDF generation, report storage, and share links are still not enabled.
+              Build 7 drafts the paid-report content and can include live SerpAPI off-site search evidence when configured. Source: {result.fullReportDraft.source === "openai" ? "OpenAI-assisted draft" : "rule-based fallback draft"}. Payments, PDF generation, report storage, and share links are still not enabled.
             </p>
 
             <div className="grid lg:grid-cols-2 gap-6 mb-6">

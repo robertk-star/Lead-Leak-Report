@@ -1,4 +1,4 @@
-# Lead Leak Report — Build 6A
+# Lead Leak Report — Build 7
 
 This build is the current Next.js App Router version of Lead Leak Report.
 
@@ -25,31 +25,38 @@ This build is the current Next.js App Router version of Lead Leak Report.
 - On-Site AI Readiness score
 - Off-Site AI Visibility score
 - Overall AI Visibility score
+- SerpAPI live off-site search evidence when configured
 - AI-assisted full report draft section
 - Rule-based full report draft fallback when OpenAI is not configured
 - `robots.txt`, `sitemap.xml`, and `llms.txt` in `/public`
 
-## Build 6A additions
+## Build 7 additions
 
-Build 6 separates AI visibility into two parts:
+Build 7 adds a live off-site search layer using SerpAPI.
 
-1. **On-Site AI Readiness** — checks the website itself: business identity, service clarity, location clarity, trust proof, crawlable content, schema, and contact clarity.
-2. **Off-Site AI Visibility** — checks whether the website exposes or links to external/entity signals that can help AI/search systems verify the business: Google Business Profile, review platforms, BBB/Facebook/Yelp/Angi, manufacturer/trade directories, awards, best-of citations, schema, and sameAs links.
+When `SERPAPI_API_KEY` is configured, the analyzer searches Google-style results for:
 
-It also adds an **Overall AI Visibility** score that weights off-site/entity consistency more heavily than on-site readiness because AI recommendations often rely on third-party verification, reviews, citations, and brand consistency.
+- `[Business Name] [City]`
+- `[Business Name] reviews`
+- `[Business Name] BBB Facebook Angi Yelp`
+- `best [industry] in [city]`
+- `[Business Name] [official domain]`
+
+The off-site score now considers live evidence for:
+
+- Google Business Profile / local-pack style signals
+- Review platforms and review consistency
+- Third-party citation footprint
+- Editorial / best-of citations
+- Manufacturer or trade directory presence
+- Brand/entity consistency
+- AI-repeatable differentiators
+
+If SerpAPI is not configured or returns no usable results, the app keeps the conservative Build 6A off-site readiness scoring and shows that live search was not completed.
 
 ## Important limitation
 
-This build does **not** run live ChatGPT, Gemini, Copilot, Google AI, or Google ranking tests. It is a readiness and signal check. It does not guarantee AI recommendations, rankings, traffic, calls, leads, or revenue.
-
-
-Build 6A adds:
-
-- Clear separation between **On-Site AI Readiness**, **Off-Site AI Visibility**, and **Overall AI Visibility**.
-- Conservative off-site scoring until Google Business Profile, review platforms, best-of/editorial citations, manufacturer/trade directories, schema/sameAs, and brand-name consistency are verified.
-- Manual off-site checklist in the preview UI.
-- Entity mismatch warnings when the website brand may not match off-site review/listing profiles.
-- Off-site action plan items in the full report draft.
+This build does **not** run live ChatGPT, Gemini, Copilot, or Google AI answer tests. It uses website data plus optional live Google search evidence. It does not guarantee AI recommendations, rankings, traffic, calls, leads, or revenue.
 
 ## Vercel settings
 
@@ -67,6 +74,10 @@ Required for best site reading:
 Fallback supported:
 
 `FIRECRAWL_API_TOKEN=your_firecrawl_api_key`
+
+Optional for live off-site search evidence:
+
+`SERPAPI_API_KEY=your_serpapi_key`
 
 Optional for AI-assisted full report drafting:
 
