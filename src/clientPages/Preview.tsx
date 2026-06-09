@@ -43,6 +43,14 @@ function getAiSignalStyles(status: "strong" | "needs-review" | "missing") {
   return { badge: "bg-yellow-100 text-yellow-800", label: "Needs Review" };
 }
 
+function getFriendlyConfidence(confidence: PreviewResult["confidence"]) {
+  if (confidence === "Basic preview") return "Limited website check";
+  if (confidence === "Live homepage preview") return "Homepage checked";
+  if (confidence === "Firecrawl homepage preview") return "Full homepage checked";
+  if (confidence === "Firecrawl + screenshot preview") return "Homepage and screenshot checked";
+  return "Website checked";
+}
+
 function getRecommendationBox(result: PreviewResult) {
   if (result.paidRecommendation === "recommended") {
     return {
@@ -220,7 +228,7 @@ export default function Preview() {
         {error && (
           <Card className="mb-8 p-4 border border-yellow-200 bg-yellow-50 text-yellow-900">
             <p className="text-sm">
-              <strong>Note:</strong> {error} Showing a fallback preview. Check the Firecrawl key or site access if this should have used the enhanced reader.
+              <strong>Note:</strong> {error} Showing a fallback preview. Some website details could not be checked automatically, so this is a limited preview.
             </p>
           </Card>
         )}
@@ -236,7 +244,7 @@ export default function Preview() {
                 <h2 className="text-2xl font-bold text-[#1a2332] mb-2">{result.label}</h2>
                 <p className="text-[#374151] mb-4">{result.summary}</p>
                 <div className="flex flex-wrap gap-2">
-                  <span className="inline-flex items-center rounded-full bg-[#f3f4f6] px-3 py-1 text-xs font-bold text-[#374151]">{result.confidence}</span>
+                  <span className="inline-flex items-center rounded-full bg-[#f3f4f6] px-3 py-1 text-xs font-bold text-[#374151]">{getFriendlyConfidence(result.confidence)}</span>
                   <span className="inline-flex items-center rounded-full bg-[#fff7ed] px-3 py-1 text-xs font-bold text-[#b45309]">{result.paidRecommendation.replace("-", " ")}</span>
                 </div>
               </div>
@@ -295,7 +303,7 @@ export default function Preview() {
             </Card>
             <Card className="bg-white border border-[#e5e7eb] p-6">
               <Search className="text-[#d97706] mb-3" size={24} />
-              <p className="text-xs font-semibold text-[#6b7280] mb-1">LOCAL SEO</p>
+              <p className="text-xs font-semibold text-[#6b7280] mb-1">LOCAL SEARCH</p>
               <p className="font-semibold text-[#1a2332] text-sm">Basic visibility gaps included</p>
             </Card>
           </div>
@@ -323,7 +331,7 @@ export default function Preview() {
           <Card className="bg-white border-2 border-[#7c3aed] p-8 mb-10">
             <div className="flex flex-col lg:flex-row gap-8 lg:items-start">
               <div className="lg:w-64 text-center lg:text-left">
-                <p className="text-xs font-bold uppercase tracking-wide text-[#7c3aed] mb-2">Off-Site AI Visibility</p>
+                <p className="text-xs font-bold uppercase tracking-wide text-[#7c3aed] mb-2">Online Reputation & AI Visibility</p>
                 <div className="text-6xl font-bold text-[#7c3aed] mb-1">{result.offsiteVisibility.score}</div>
                 <div className="text-sm font-semibold text-[#6b7280] mb-3">/ 100</div>
                 <h3 className="text-xl font-bold text-[#1a2332] mb-2">{result.offsiteVisibility.label}</h3>
@@ -331,11 +339,11 @@ export default function Preview() {
               </div>
               <div className="flex-1">
                 <div className="mb-5 rounded-lg border border-purple-100 bg-purple-50 p-4 text-sm text-[#4c1d95]">
-                  <strong>What this means:</strong> Build 7 can use live Google search data through SerpAPI when <code>SERPAPI_API_KEY</code> is configured. It checks for Google/local profile signals, review platforms, third-party citations, best-of/editorial mentions, manufacturer/trade listings, entity consistency, and AI-repeatable differentiators.
+                  <strong>What this means:</strong> This checks whether other trusted websites help confirm who the business is, where it works, and why customers should trust it. We look for things like Google Business Profile, reviews, Facebook, BBB, Angi, Yelp, awards, local “best company” lists, and whether the business name is consistent online.
                 </div>
                 {result.offsiteVisibility.gaps?.length ? (
                   <div className="mb-5 rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-900">
-                    <p className="font-bold mb-2">Manual off-site checks needed</p>
+                    <p className="font-bold mb-2">Manual online checks needed</p>
                     <ul className="space-y-1 list-disc pl-5">
                       {result.offsiteVisibility.gaps.slice(0, 5).map((gap) => (
                         <li key={gap}>{gap}</li>
@@ -345,7 +353,7 @@ export default function Preview() {
                 ) : null}
                 {result.offsiteVisibility.evidence?.length ? (
                   <div className="mb-5 rounded-lg border border-purple-200 bg-white p-4 text-sm text-[#374151]">
-                    <p className="font-bold text-[#1a2332] mb-3">Live off-site search evidence</p>
+                    <p className="font-bold text-[#1a2332] mb-3">What we found around the web</p>
                     <div className="space-y-3">
                       {result.offsiteVisibility.evidence.slice(0, 7).map((item, index) => {
                         const badge = item.status === "found" ? "bg-green-100 text-green-700" : item.status === "needs-review" ? "bg-yellow-100 text-yellow-800" : "bg-red-100 text-red-700";
@@ -395,7 +403,7 @@ export default function Preview() {
               </div>
               <div className="flex-1">
                 <div className="mb-5 rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm text-[#1e3a8a]">
-                  <strong>What this means:</strong> This score checks the website itself: business identity, service clarity, location, trust, crawlable content, and basic schema signals. It does not include Google Business Profile, review platforms, awards, directories, or live AI rankings.
+                  <strong>What this means:</strong> This checks the website itself. It looks for clear wording about who the business is, what services it offers, what areas it serves, why customers should trust it, and how easy the important information is to read.
                 </div>
                 <div className="grid md:grid-cols-2 gap-4">
                   {result.aiVisibility.signals.map((signal) => {
@@ -420,21 +428,21 @@ export default function Preview() {
         <Card className="bg-white border border-[#e5e7eb] p-8 mb-10">
           <div className="flex items-center gap-3 mb-4">
             <MonitorSmartphone className="text-[#d97706]" size={24} />
-            <h3 className="font-bold text-[#1a2332]">First-Screen / Screenshot Review</h3>
+            <h3 className="font-bold text-[#1a2332]">What a customer sees first</h3>
           </div>
           <p className="text-sm text-[#374151] mb-6">
-            Firecrawl can return a rendered homepage screenshot so the preview can be compared against what a visitor actually sees. The score is still rule-based, but this makes manual QA and future screenshot/AI review much easier.
+            This section looks at the first screen of the homepage. For service businesses, the phone number, main service, location, and estimate button should be easy to spot quickly.
           </p>
           <div className="grid lg:grid-cols-2 gap-6 items-start">
             <div className="rounded-lg border border-[#e5e7eb] bg-[#f9fafb] p-4">
               {result.screenshotUrl ? (
                 <a href={result.screenshotUrl} target="_blank" rel="noreferrer" className="block">
-                  <img src={result.screenshotUrl} alt="Homepage screenshot captured by Firecrawl" className="w-full max-h-[360px] object-contain rounded border border-[#e5e7eb] bg-white" />
+                  <img src={result.screenshotUrl} alt="Homepage screenshot" className="w-full max-h-[360px] object-contain rounded border border-[#e5e7eb] bg-white" />
                   <p className="text-xs text-[#6b7280] mt-2">Click screenshot to open full-size capture.</p>
                 </a>
               ) : (
                 <div className="min-h-[180px] flex items-center justify-center text-center text-sm text-[#6b7280]">
-                  No screenshot was returned for this scan. Firecrawl may still have read the homepage text successfully.
+                  No homepage screenshot was available for this preview. The site text may still have been checked.
                 </div>
               )}
             </div>
@@ -485,9 +493,9 @@ export default function Preview() {
           <Card className="bg-white border border-[#e5e7eb] p-8">
             <div className="flex items-center gap-3 mb-4">
               <Search className="text-[#d97706]" size={24} />
-              <h3 className="font-bold text-[#1a2332]">Foundational Local SEO Preview</h3>
+              <h3 className="font-bold text-[#1a2332]">Local Search Visibility</h3>
             </div>
-            <p className="text-sm text-[#374151] mb-4">This is not a full SEO audit. These are basic visibility checks that add value to the report without turning it into a rankings tool.</p>
+            <p className="text-sm text-[#374151] mb-4">This is not a full Google ranking report. These are simple checks to see whether customers and search tools can understand the service area, services, and local proof.</p>
             <ul className="space-y-2 text-sm text-[#374151]">
               {result.localSeoGaps.map((gap) => (
                 <li key={gap} className="flex gap-2"><CheckCircle2 className="text-[#d97706] flex-shrink-0 mt-0.5" size={16} /> {gap}</li>
@@ -514,10 +522,10 @@ export default function Preview() {
           <Card className="bg-white border border-[#e5e7eb] p-8 mb-10">
             <div className="flex items-center gap-3 mb-2">
               <FileText className="text-[#d97706]" size={24} />
-              <h3 className="font-bold text-[#1a2332]">AI-Assisted Full Report Draft</h3>
+              <h3 className="font-bold text-[#1a2332]">Full Report Preview</h3>
             </div>
             <p className="text-sm text-[#6b7280] mb-6">
-              Build 7 drafts the paid-report content and can include live SerpAPI off-site search evidence when configured. Source: {result.fullReportDraft.source === "openai" ? "OpenAI-assisted draft" : "rule-based fallback draft"}. Payments, PDF generation, report storage, and share links are still not enabled.
+              This draft shows the kind of plain-English report a business owner could use or send to their web person. Payment and download options will be added later.
             </p>
 
             <div className="grid lg:grid-cols-2 gap-6 mb-6">
@@ -526,15 +534,15 @@ export default function Preview() {
                 <p className="text-sm text-[#374151] leading-relaxed">{result.fullReportDraft.executiveSummary}</p>
               </div>
               <div className="rounded-lg border border-[#e5e7eb] p-5 bg-[#f9fafb]">
-                <p className="text-xs font-bold uppercase text-[#6b7280] mb-2">AI Visibility Summary</p>
+                <p className="text-xs font-bold uppercase text-[#6b7280] mb-2">AI & Online Visibility Summary</p>
                 <p className="text-sm text-[#374151] leading-relaxed">{result.fullReportDraft.aiVisibilitySummary}</p>
               </div>
               <div className="rounded-lg border border-[#e5e7eb] p-5 bg-[#f9fafb]">
-                <p className="text-xs font-bold uppercase text-[#6b7280] mb-2">Lead Leak Summary</p>
+                <p className="text-xs font-bold uppercase text-[#6b7280] mb-2">Missed Lead Summary</p>
                 <p className="text-sm text-[#374151] leading-relaxed">{result.fullReportDraft.leadLeakSummary}</p>
               </div>
               <div className="rounded-lg border border-[#e5e7eb] p-5 bg-[#f9fafb]">
-                <p className="text-xs font-bold uppercase text-[#6b7280] mb-2">Local SEO Summary</p>
+                <p className="text-xs font-bold uppercase text-[#6b7280] mb-2">Local Search Summary</p>
                 <p className="text-sm text-[#374151] leading-relaxed">{result.fullReportDraft.localSeoSummary}</p>
               </div>
             </div>
@@ -571,7 +579,7 @@ export default function Preview() {
             </div>
 
             <div className="mb-6">
-              <h4 className="font-bold text-[#1a2332] mb-3">Google Business Profile Freshness Ideas</h4>
+              <h4 className="font-bold text-[#1a2332] mb-3">Google Business Profile Post Ideas</h4>
               <div className="grid md:grid-cols-2 gap-4">
                 {result.fullReportDraft.gbpPosts.map((post, index) => (
                   <div key={`${post}-${index}`} className="rounded-lg border border-[#e5e7eb] p-4 text-sm text-[#374151]">
@@ -594,7 +602,7 @@ export default function Preview() {
               <h3 className="text-2xl font-bold mb-3">{recommendationBox.title}</h3>
               <p className="text-[#d1d5db] mb-6">{recommendationBox.body}</p>
               <div className="grid md:grid-cols-2 gap-4 mb-8 bg-[#374151] bg-opacity-50 p-6 rounded-lg">
-                {["AI Visibility Readiness", "Top 5 Lead Leaks", "Copy/Paste Fixes", "Local SEO Gap Check", "Web Person Checklist", "7-Day Fix Plan", "Shareable Report Link"].map((item) => (
+                {["Website Clarity Check", "Top Missed Lead Issues", "Copy/Paste Fixes", "Local Search Check", "Web Person Checklist", "7-Day Fix Plan", "Shareable Report Link"].map((item) => (
                   <div key={item} className="flex items-start gap-2 text-sm">
                     <CheckCircle2 size={16} className="text-green-400 flex-shrink-0 mt-0.5" />
                     <span>{item}</span>
@@ -610,14 +618,11 @@ export default function Preview() {
         </Card>
 
         <Card className="bg-white border border-[#e5e7eb] p-8">
-          <h3 className="font-bold text-[#1a2332] mb-4">About Build 5</h3>
+          <h3 className="font-bold text-[#1a2332] mb-4">Important note</h3>
           <p className="text-[#374151] mb-4">
-            This build adds AI-assisted full report drafting on top of the AI Visibility Readiness and Lead Leak preview layers. When OPENAI_API_KEY is configured, the app drafts plain-English report sections from the rule-based findings. Without OpenAI, it uses a rule-based fallback draft.
+            This preview is a website and online-visibility review. It is meant to show practical items that may make it harder for customers to call, request an estimate, or trust the business online.
           </p>
-          <p className="text-[#374151] mb-4">
-            Stripe, PDF generation, report storage, and share links are still not enabled. The next phase should add payment gating and report persistence after the report draft language is trusted.
-          </p>
-          <p className="text-sm text-[#6b7280]"><strong>Disclaimer:</strong> This preview is an informational website review. It does not guarantee rankings, traffic, calls, or revenue.</p>
+          <p className="text-sm text-[#6b7280]"><strong>Disclaimer:</strong> This preview does not guarantee Google rankings, AI recommendations, traffic, calls, leads, or revenue.</p>
         </Card>
       </div>
     </div>

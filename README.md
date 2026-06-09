@@ -1,4 +1,4 @@
-# Lead Leak Report — Build 7
+# Lead Leak Report — Build 7A
 
 This build is the current Next.js App Router version of Lead Leak Report.
 
@@ -26,13 +26,14 @@ This build is the current Next.js App Router version of Lead Leak Report.
 - Off-Site AI Visibility score
 - Overall AI Visibility score
 - SerpAPI live off-site search evidence when configured
+- Plain-English preview labels for service business owners
 - AI-assisted full report draft section
 - Rule-based full report draft fallback when OpenAI is not configured
 - `robots.txt`, `sitemap.xml`, and `llms.txt` in `/public`
 
-## Build 7 additions
+## Build 7A additions
 
-Build 7 adds a live off-site search layer using SerpAPI.
+Build 7A keeps the Build 7 live search layer and cleans up the preview page wording for service business owners.
 
 When `SERPAPI_API_KEY` is configured, the analyzer searches Google-style results for:
 
@@ -94,3 +95,8 @@ No.
 ## Notes
 
 This build does not add Stripe, PDFs, accounts, report storage, or share links yet. The full report draft is visible in the preview so the language and usefulness can be tested before adding payment gating.
+
+
+## Build 7A wording cleanup
+
+The preview page now avoids customer-facing tool language such as SerpAPI, Firecrawl, CTA, request path, and internal build notes. It uses service-business wording such as “Can customers easily ask for an estimate?”, “What we found around the web”, “Local Search Visibility”, and “Business name consistency.”

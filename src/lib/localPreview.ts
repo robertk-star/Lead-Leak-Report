@@ -165,7 +165,7 @@ function recommendationText(rec: PreviewResult["paidRecommendation"], industry: 
     return `This preview found enough possible issues to justify a deeper ${industry.label.toLowerCase()} Lead Leak Report if the business wants exact fixes.`;
   }
   if (rec === "manual-review") {
-    return "The automated preview could not read enough of the site to make a confident paid-report recommendation. A manual review or Firecrawl scan should be used before charging.";
+    return "The automated preview could not read enough of the site to make a confident paid-report recommendation. A manual review or stronger website scan should be used before charging.";
   }
   return "The preview did not find enough meaningful issues to confidently recommend a paid report. That no-sale rule protects trust.";
 }
@@ -191,7 +191,7 @@ function buildFallbackOffsiteVisibility(industry: IndustryConfig): OffsiteVisibi
     score: 38,
     label: "Off-site visibility not verified",
     summary:
-      "The fallback preview did not run third-party/entity checks. A full AI visibility report should verify Google Business Profile, review platforms, directory/list mentions, brand consistency, and schema/sameAs signals before scoring off-site visibility.",
+      "The fallback preview did not run outside-website checks. A full AI visibility report should verify Google Business Profile, review platforms, directory/list mentions, brand consistency, and matching profile links and behind-the-scenes website markup before scoring off-site visibility.",
     signals: [
       {
         label: "Google Business Profile / local pack",
@@ -206,17 +206,17 @@ function buildFallbackOffsiteVisibility(industry: IndustryConfig): OffsiteVisibi
         fix: "Confirm Google, BBB, Facebook, Angi, Yelp, and other review profiles use the same business name and website URL.",
       },
       {
-        label: "Best-of / editorial citations",
+        label: "Awards or “best company” list mentions",
         status: "needs-review",
         note: "Not checked in fallback mode.",
         fix: `Look for local best-of lists, trade directories, and ${industry.label.toLowerCase()} award pages that mention the business.`,
       },
     ],
     gaps: [
-      "Run off-site/entity consistency checks before calling this a full AI visibility report.",
-      "Verify Google Business Profile, review platform names, third-party citations, awards, and manufacturer/trade listings.",
+      "Check outside websites before calling this a full AI visibility report.",
+      "Verify Google Business Profile, review platform names, trusted website mentions, awards, and manufacturer/trade listings.",
     ],
-    note: "This off-site score is not based on live AI rankings. It identifies whether outside sources appear to confirm the business entity, reviews, reputation, and local relevance.",
+    note: "This score does not test live AI rankings. It checks whether outside websites appear to confirm the business name, reviews, reputation, and local relevance.",
   };
 }
 
@@ -234,11 +234,11 @@ export function buildFallbackPreview(params: {
       severity: "warning",
       category: "Preview Confidence",
       explanation:
-        "This preview could not confirm enough website content from the browser flow. Before selling a paid report, the system should read the homepage with the server analyzer or Firecrawl.",
+        "This preview could not confirm enough website content. Before selling a paid report, the system should run a stronger website scan.",
       evidence: "The fallback preview ran because the live site data was missing or blocked.",
       fix: [
         "Use the server-side analyzer first.",
-        "Use Firecrawl in Build 2 for more reliable full-page reading.",
+        "Use a stronger website reader for more reliable full-page reading.",
         "Do not recommend payment unless meaningful issues are confirmed.",
       ],
     },
@@ -260,8 +260,8 @@ export function buildFallbackPreview(params: {
     buildCategory("call", "Call Readiness", 12, 25, "Phone and click-to-call need verification."),
     buildCategory("clarity", "5-Second Service Clarity", 12, 20, "Industry and city clarity need verification."),
     buildCategory("trust", "Trust Proof", 8, 20, "Reviews, certifications, and proof need verification."),
-    buildCategory("path", "Request Path", 8, 15, "CTA and form friction need verification."),
-    buildCategory("seo", "Local Visibility", 6, 10, "Basic local SEO signals need verification."),
+    buildCategory("path", "Estimate Request Steps", 8, 15, "button or form and form friction need verification."),
+    buildCategory("seo", "Local Visibility", 6, 10, "Basic local search signals need verification."),
     buildCategory("freshness", "Freshness", 5, 10, "Freshness signals need verification."),
   ];
 
@@ -293,12 +293,12 @@ export function buildFallbackPreview(params: {
     overallAiVisibility: {
       score: 45,
       label: "Overall AI visibility not verified",
-      summary: "The fallback preview cannot combine on-site and off-site visibility because the live analyzer did not run. Build 6A keeps off-site scoring conservative until Google Business Profile, review platforms, best-of lists, and entity consistency are verified.",
+      summary: "The fallback preview cannot combine on-site and off-site visibility because the live analyzer did not run. Build 6A keeps off-site scoring conservative until Google Business Profile, review platforms, best-of lists, and business name consistency are verified.",
     },
     visualChecks: [
       { label: "Homepage screenshot", status: "not-confirmed", note: "No screenshot was captured in fallback preview." },
       { label: "First-screen phone path", status: "needs-review", note: "A live screenshot is needed to confirm whether the phone is visible above the fold." },
-      { label: "First-screen CTA", status: "needs-review", note: "A live screenshot is needed to confirm CTA prominence." },
+      { label: "First-screen button or form", status: "needs-review", note: "A live screenshot is needed to confirm button or form prominence." },
     ],
     webPersonChecklist: commonWebPersonChecklist(industry),
     nextBestAction: "Run a stronger live scan before asking this visitor to pay.",
@@ -318,18 +318,18 @@ function buildFallbackAiVisibility(industry: IndustryConfig): AiVisibilityReadin
     score: 55,
     label: aiVisibilityLabel(55),
     summary:
-      "The fallback preview cannot verify AI visibility signals yet. A live Firecrawl scan is needed to review entity clarity, services, location, trust, crawlability, and third-party footprint.",
+      "The fallback preview cannot verify AI visibility signals yet. A live stronger website scan is needed to review entity clarity, services, location, trust, readable website content, and outside reputation footprint.",
     signals: [
       { label: "Entity clarity", status: "needs-review", note: "Business type, city, and contact details need live verification.", fix: "Make the homepage clearly state who the business is, what it does, where it works, and how to contact it." },
-      { label: "Service clarity", status: "needs-review", note: `${industry.label} service pages and service keywords need live verification.`, fix: `Add crawlable service sections/pages for ${industry.serviceKeywords.slice(0, 4).join(", ")}.` },
+      { label: "Service clarity", status: "needs-review", note: `${industry.label} service pages and service keywords need live verification.`, fix: `Add easy-to-read service sections/pages for ${industry.serviceKeywords.slice(0, 4).join(", ")}.` },
       { label: "Trust and citation readiness", status: "needs-review", note: "Reviews, awards, certifications, and third-party profile links need live verification.", fix: "Add review source/count, certifications, warranties, project proof, and trusted third-party links." },
     ],
     gaps: [
       "Run a live scan before making an AI Visibility recommendation.",
-      "Confirm business name, service type, location, trust proof, and crawlable content.",
+      "Confirm business name, service type, location, trust proof, and website text that search and AI tools can read.",
     ],
     note:
-      "AI Visibility Readiness does not test live rankings in ChatGPT, Gemini, Copilot, or Google AI. It checks whether the website provides basic signals those systems can use when understanding local businesses.",
+      "Website AI Readiness does not test live rankings in ChatGPT, Gemini, Copilot, or Google AI. It checks whether the website provides basic signals those systems can use when understanding local businesses.",
   };
 }
 
@@ -429,10 +429,10 @@ function buildAiVisibilityReadiness(params: {
 
   const signals = [
     aiSignal("Entity clarity", entityScore >= 15 ? "strong" : entityScore >= 9 ? "needs-review" : "missing", entityScore >= 15 ? "Business type, location, and contact signals are clear enough for AI/search systems to understand the company." : "The site may not clearly connect business type, location, and contact details in one crawlable place.", "Make the homepage title, headline, phone, and contact page clearly identify the business, service type, and city."),
-    aiSignal("Service clarity", serviceScore >= 15 ? "strong" : serviceScore >= 8 ? "needs-review" : "missing", serviceScore >= 15 ? "Specific service terms and/or service-page links were found." : `AI tools may need clearer service detail for ${industry.label.toLowerCase()} work.`, `Add crawlable service sections/pages for ${industry.serviceKeywords.slice(0, 4).join(", ")}.`),
+    aiSignal("Service clarity", serviceScore >= 15 ? "strong" : serviceScore >= 8 ? "needs-review" : "missing", serviceScore >= 15 ? "Specific service terms and/or service-page links were found." : `AI tools may need clearer service detail for ${industry.label.toLowerCase()} work.`, `Add easy-to-read service sections/pages for ${industry.serviceKeywords.slice(0, 4).join(", ")}.`),
     aiSignal("Trust and citation readiness", trustScore >= 18 ? "strong" : trustScore >= 9 ? "needs-review" : "missing", trustScore >= 18 ? "Review, credential, project, or third-party trust signals were found." : "The site may not provide enough visible proof for an AI answer to confidently describe why the company is trustworthy.", "Add review source/count, certifications, warranties, project proof, and links to trusted third-party profiles."),
     aiSignal("Crawlable content", crawlScore >= 15 ? "strong" : crawlScore >= 8 ? "needs-review" : "missing", crawlScore >= 15 ? "The homepage appears to include enough crawlable text and support pages/signals." : "Important information may be too thin, image-based, or missing structured context.", "Add plain text service summaries, FAQ content, About/Contact links, and LocalBusiness schema where possible."),
-    aiSignal("Local footprint", footprintScore >= 11 ? "strong" : footprintScore >= 6 ? "needs-review" : "missing", footprintScore >= 11 ? "Local/service-area and third-party footprint signals were found." : "AI systems may have limited external/local context for this business from the website alone.", "Add service areas, local project examples, and links to Google Business Profile, BBB, Facebook, and relevant trade/manufacturer profiles."),
+    aiSignal("Local footprint", footprintScore >= 11 ? "strong" : footprintScore >= 6 ? "needs-review" : "missing", footprintScore >= 11 ? "Local/service-area and outside reputation footprint signals were found." : "AI systems may have limited external/local context for this business from the website alone.", "Add service areas, local project examples, and links to Google Business Profile, BBB, Facebook, and relevant trade/manufacturer profiles."),
   ];
 
   const gaps = signals.filter((signal) => signal.status !== "strong").map((signal) => signal.fix);
@@ -445,10 +445,10 @@ function buildAiVisibilityReadiness(params: {
       ? "The site appears to provide strong basic signals for AI/search systems to understand the business. This does not guarantee recommendations, but the foundation looks solid."
       : score >= 70
         ? "The site has some useful AI visibility signals, but a few gaps may limit how confidently AI/search systems understand services, location, or trust."
-        : "The site has meaningful AI visibility gaps. It may not give AI/search tools enough clear business, service, location, trust, and crawlability signals.",
+        : "The site has meaningful AI visibility gaps. It may not give AI/search tools enough clear business, service, location, trust, and readable website content signals.",
     signals,
     gaps: gaps.slice(0, 5),
-    note: "AI Visibility Readiness does not test live rankings in ChatGPT, Gemini, Copilot, or Google AI. It checks whether the website provides the basic signals those systems can use when understanding local businesses.",
+    note: "Website AI Readiness does not test live rankings in ChatGPT, Gemini, Copilot, or Google AI. It checks whether the website provides the basic signals those systems can use when understanding local businesses.",
   };
 }
 
@@ -568,7 +568,7 @@ export function buildPreviewFromScrape(params: {
     buildCategory("call", "Call Readiness", callScore, 25, hasPhone ? (!hasPhoneProminent ? "Phone was found, but not near the start of the scanned homepage content." : hasTelLink ? "Prominent phone and click-to-call found." : "Prominent phone found, but click-to-call was not confirmed.") : "Phone number not found in homepage content."),
     buildCategory("clarity", "5-Second Service Clarity", clarityScore, 20, primaryCount > 0 ? "Industry wording found." : "Main service wording was not confirmed."),
     buildCategory("trust", "Trust Proof", trustScore, 20, hasStrongReviewProof ? "Strong review proof was found." : hasBasicReviewProof || hasCertificationProof ? "Some trust proof was found, but the source/count may be limited." : "Trust proof appears thin, linked-only, or buried."),
-    buildCategory("path", "Request Path", requestScore, 15, hasBrokenCta ? "A possible broken/placeholder link was detected." : formFieldCount > 6 ? `Form may be high-friction with ${formFieldCount} fields.` : strongCtaCount > 0 ? "Strong request path language found." : "Request path has basic or soft signals."),
+    buildCategory("path", "Estimate Request Steps", requestScore, 15, hasBrokenCta ? "A possible broken/placeholder link was detected." : formFieldCount > 6 ? `Form may be high-friction with ${formFieldCount} fields.` : strongCtaCount > 0 ? "Strong request path language found." : "Request path has basic or soft signals."),
     buildCategory("seo", "Local Visibility", localSeoScore, 10, hasCity ? "City/service-area signal found." : "City/service-area signal not confirmed."),
     buildCategory("freshness", "Freshness", freshnessScore, 10, hasCurrentYear ? "Current year signal found." : hasStaleYear ? "Older dates found without a current year signal." : "Freshness signal was limited."),
   ];
@@ -608,11 +608,11 @@ export function buildPreviewFromScrape(params: {
 
   if (hasPhone && !hasPhoneProminent && strongCtaCount > 0) {
     findings.push({
-      title: "Estimate CTA is visible, but the call path is weaker",
+      title: "Estimate button or form is visible, but the call path is weaker",
       severity: "warning",
       category: "Call Readiness",
       explanation: `The page appears to have a request/estimate action, but the phone path is not as obvious. Some ${industry.customerLabel || "visitors"} will want to call instead of filling out a form.`,
-      evidence: "Strong CTA wording was found, but the phone number was not confirmed near the top of the scanned homepage content.",
+      evidence: "Strong button or form wording was found, but the phone number was not confirmed near the top of the scanned homepage content.",
       fix: ["Place 'Call Now' beside the estimate button.", "Make the phone number click-to-call.", "Use both call and request options on mobile."],
     });
   }
@@ -670,30 +670,30 @@ export function buildPreviewFromScrape(params: {
 
   if (hasBrokenCta) {
     findings.push({
-      title: "Possible broken or placeholder CTA link detected",
+      title: "Possible broken or placeholder button or form link detected",
       severity: "critical",
-      category: "Request Path",
+      category: "Estimate Request Steps",
       explanation: "A main action link that points nowhere can stop a ready visitor from contacting the business.",
       evidence: "The scan detected a placeholder link pattern such as href='#', href='', href='<>' or javascript:void(0).",
-      fix: ["Test every button in the header and hero section.", "Send the main CTA to a real quote/contact form.", "Use a clear action such as 'Get a Free Estimate' or 'Schedule Service'."],
+      fix: ["Test every button in the header and hero section.", "Send the main button or form to a real quote/contact form.", "Use a clear action such as 'Get a Free Estimate' or 'Schedule Service'."],
     });
   } else if (strongCtaCount === 0 && softCtaCount > 0) {
     findings.push({
-      title: "CTA is present but could be more specific",
+      title: "button or form is present but could be more specific",
       severity: "warning",
-      category: "Request Path",
+      category: "Estimate Request Steps",
       explanation: "The page has a contact/consultation path, but the wording may be softer than a direct service request. Specific action buttons usually make the next step clearer.",
-      evidence: "Soft CTA wording was found, but the strongest industry-specific CTA terms were not confirmed.",
-      fix: [`Use wording like '${industry.ctaKeywords[0]}' near the top.`, "Repeat the CTA after trust proof sections.", "Tell visitors what happens after they submit."],
+      evidence: "Soft button or form wording was found, but the strongest industry-specific button or form terms were not confirmed.",
+      fix: [`Use wording like '${industry.ctaKeywords[0]}' near the top.`, "Repeat the button or form after trust proof sections.", "Tell visitors what happens after they submit."],
     });
   } else if (ctaCount === 0) {
     findings.push({
-      title: "No strong call-to-action found",
+      title: "No clear button or form found",
       severity: "warning",
-      category: "Request Path",
+      category: "Estimate Request Steps",
       explanation: "The page should give ready-to-act visitors a clear next step, not just general information.",
-      evidence: `No CTA terms were found from this industry list: ${industry.ctaKeywords.slice(0, 4).join(", ")}.`,
-      fix: ["Add a clear CTA button near the top.", `Use wording like '${industry.ctaKeywords[0]}'.`, "Repeat the CTA after trust proof sections."],
+      evidence: `No button or form terms were found from this industry list: ${industry.ctaKeywords.slice(0, 4).join(", ")}.`,
+      fix: ["Add a clear button or form button near the top.", `Use wording like '${industry.ctaKeywords[0]}'.`, "Repeat the button or form after trust proof sections."],
     });
   }
 
@@ -701,7 +701,7 @@ export function buildPreviewFromScrape(params: {
     findings.push({
       title: "Contact form may have too much friction",
       severity: "warning",
-      category: "Request Path",
+      category: "Estimate Request Steps",
       explanation: `The scan found ${formFieldCount} form fields. Long forms can reduce quote or service requests, especially on mobile.`,
       evidence: `${formFieldCount} input/select/textarea fields were found in the homepage HTML.`,
       fix: ["Reduce the form to 4–5 key fields.", "Ask for more detail after the first contact.", "Add a clear 'what happens next' line under the form."],
@@ -710,11 +710,11 @@ export function buildPreviewFromScrape(params: {
 
   if (localSeoCount < 2) {
     findings.push({
-      title: "Foundational local SEO signals may be light",
+      title: "Local search signals may be light",
       severity: "warning",
       category: "Local Visibility",
       explanation: "The scan found limited local service keywords that help customers and search engines understand what you do.",
-      evidence: `Only ${localSeoCount} foundational local visibility keyword(s) were found.`,
+      evidence: `Only ${localSeoCount} local service keyword(s) were found.`,
       fix: ["Add core service terms to the homepage.", "Create dedicated service pages.", "Add a short FAQ section for common local customer questions."],
     });
   }
@@ -818,9 +818,9 @@ export function buildPreviewFromScrape(params: {
     localSeoGaps,
     aiVisibility,
     visualChecks: [
-      { label: "Homepage screenshot", status: "not-confirmed", note: "Screenshot capture is only available from the Firecrawl API response." },
+      { label: "Homepage screenshot", status: "not-confirmed", note: "Screenshot capture was not available for this preview." },
       { label: "First-screen phone path", status: hasPhoneProminent ? "confirmed" : hasPhone ? "needs-review" : "not-confirmed", note: hasPhoneProminent ? "Phone appeared early in the scanned homepage content." : hasPhone ? "Phone was found, but not early enough to treat it as a first-screen call path." : "Phone was not found in the homepage scan." },
-      { label: "First-screen CTA", status: strongCtaCount > 0 ? "confirmed" : softCtaCount > 0 ? "needs-review" : "not-confirmed", note: strongCtaCount > 0 ? "Strong CTA wording was found in the scanned page content." : softCtaCount > 0 ? "A softer contact path was found, but a stronger service request CTA may be needed." : "No clear CTA wording was confirmed." },
+      { label: "First-screen button or form", status: strongCtaCount > 0 ? "confirmed" : softCtaCount > 0 ? "needs-review" : "not-confirmed", note: strongCtaCount > 0 ? "Strong button or form wording was found in the scanned page content." : softCtaCount > 0 ? "A softer contact path was found, but a stronger service request button or form may be needed." : "No clear button or form wording was confirmed." },
       { label: "First-screen trust proof", status: hasStrongReviewProof ? "confirmed" : hasBasicReviewProof || hasCertificationProof ? "needs-review" : "not-confirmed", note: hasStrongReviewProof ? "Strong review proof was found." : hasBasicReviewProof || hasCertificationProof ? "Some trust proof was found, but source/count or visual prominence may need review." : "Trust proof was not confirmed in the homepage scan." },
     ],
     webPersonChecklist: commonWebPersonChecklist(industry),
@@ -828,7 +828,7 @@ export function buildPreviewFromScrape(params: {
       paidRecommendation === "recommended"
         ? "Show the locked full report offer once payments are added."
         : paidRecommendation === "manual-review"
-          ? "Run a deeper manual or Firecrawl review before charging."
+          ? "Run a deeper manual review before charging."
           : "Do not push the paid report unless a deeper scan finds more meaningful issues.",
   };
 }

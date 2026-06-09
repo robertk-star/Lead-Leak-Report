@@ -23,7 +23,7 @@ const paidRecommendationFrom = (score, findings, confidence) => {
   if (confidence === "Basic preview") return "manual-review";
   return "not-recommended";
 };
-const recommendationText = (rec, industry) => rec === "recommended" ? `This preview found enough possible issues to justify a deeper ${industry.label.toLowerCase()} Lead Leak Report if the business wants exact fixes.` : rec === "manual-review" ? "The automated preview could not read enough of the site to make a confident paid-report recommendation. A manual review or Firecrawl scan should be used before charging." : "The preview did not find enough meaningful issues to confidently recommend a paid report. That no-sale rule protects trust.";
+const recommendationText = (rec, industry) => rec === "recommended" ? `This preview found enough possible issues to justify a deeper ${industry.label.toLowerCase()} Lead Leak Report if the business wants exact fixes.` : rec === "manual-review" ? "The preview could not read enough of the website to confidently recommend a paid report. A manual review or stronger website scan should be used before charging." : "The preview did not find enough meaningful issues to confidently recommend a paid report. That no-sale rule protects trust.";
 const checklist = (industry) => ["Make the main phone number click-to-call on mobile.", `Make the first headline clearly say ${industry.primaryKeywords[0]} and the main city/service area.`, `Add a clear ${industry.ctaKeywords[0]} button near the top of the page.`, "Add visible reviews, star ratings, or testimonials near the top.", "Add local project photos or service-area proof.", "Shorten forms to 4–5 fields where possible."];
 
 
@@ -194,7 +194,7 @@ function evaluateSearchEvidence({ searchData, businessName, cityState, industry,
       detail: editorialSources.length ? editorialSources.slice(0, 3).map((item) => item.title || item.source).join(" | ") : "No best-of/editorial result was confirmed in the live search results.",
     },
     {
-      label: "Brand/entity consistency",
+      label: "Brand/business name consistency",
       status: mismatchHits.length ? "needs-review" : domainResults.length || brandResults.length ? "found" : "not-found",
       detail: mismatchHits.length ? `Possible name/entity mismatch in search results: ${mismatchHits.slice(0, 2).map((item) => item.title).join(" | ")}` : domainResults.length ? `Official domain found in ${domainResults.length} result(s).` : "Official domain was not confirmed in the live search result set.",
     },
@@ -204,7 +204,7 @@ function evaluateSearchEvidence({ searchData, businessName, cityState, industry,
       detail: manufacturerSources.length ? manufacturerSources.slice(0, 3).map((item) => item.source || item.title).join(" | ") : "No manufacturer/trade directory result was confirmed in the live search results.",
     },
     {
-      label: "AI-repeatable differentiator",
+      label: "Clear reason to choose this company",
       status: differentiatorFound ? "found" : "needs-review",
       detail: differentiatorFound ? `${differentiatorFound.title}: ${differentiatorFound.snippet}`.slice(0, 260) : "No clear proof-based differentiator was confirmed in live search snippets.",
     },
@@ -216,7 +216,7 @@ function evaluateSearchEvidence({ searchData, businessName, cityState, industry,
     aiSignal("Editorial / best-of citations", editorialSources.length ? "strong" : "missing", editorialSources.length ? "Live search found editorial/best-of style mentions." : "No editorial/best-of mention was confirmed in live search results.", `Pursue credible local best-of lists, trade directories, awards, and “best ${industry.pluralLabel || industry.label} in ${String(cityState).split(",")[0] || "your city"}” pages that AI tools may cite.`),
     aiSignal("Third-party citation footprint", brandResults.length >= 6 ? "strong" : brandResults.length >= 2 ? "needs-review" : "missing", `Live search found ${brandResults.length} brand-related result(s) and ${domainResults.length} official-domain result(s).`, "Build and link trusted profiles such as Google Business Profile, BBB, Facebook, Yelp, Angi/HomeAdvisor/Thumbtack, manufacturer directories, and local chamber/trade listings."),
     aiSignal("Schema / sameAs entity alignment", "needs-review", "Live search helps confirm outside sources; schema/sameAs must still be checked on the site.", "Add LocalBusiness/ProfessionalService schema with sameAs links to official review, social, and directory profiles."),
-    aiSignal("AI-repeatable differentiator", differentiatorFound ? "strong" : "needs-review", differentiatorFound ? "Live search found a proof-style differentiator in search snippets." : "Live search did not confirm a concise differentiator AI tools could repeat.", "State one clear proof-based differentiator in crawlable text and reinforce it across Google Business Profile, reviews, directories, and editorial sources."),
+    aiSignal("Clear reason to choose this company", differentiatorFound ? "strong" : "needs-review", differentiatorFound ? "Live search found a proof-style differentiator in search snippets." : "Live search did not confirm a concise differentiator AI tools could repeat.", "State one clear proof-based differentiator in website text that search and AI tools can read and reinforce it across Google Business Profile, reviews, directories, and editorial sources."),
   ];
 
   const gaps = signals.filter((signal) => signal.status !== "strong").map((signal) => signal.fix);
@@ -227,11 +227,11 @@ function evaluateSearchEvidence({ searchData, businessName, cityState, industry,
     score,
     label: offsiteVisibilityLabel(score),
     summary: searchData.used
-      ? "Build 7 used live Google search results through SerpAPI to check off-site/entity signals, including local profile presence, review platforms, citations, editorial mentions, brand consistency, and differentiators."
-      : "SerpAPI was configured but no usable search results were returned. Manual off-site verification is still needed.",
+      ? "We checked outside websites for signs that confirm this business, including Google Business Profile, review sites, trusted mentions, awards or best-company lists, business name consistency, and clear reasons customers might choose this company."
+      : "Outside-web checking did not return enough usable information. A manual check of Google Business Profile, reviews, trusted websites, and business name consistency is still needed.",
     signals,
     gaps: gaps.slice(0, 7),
-    note: "This is still an AI visibility readiness score. It uses live search evidence, but it does not guarantee ChatGPT, Gemini, Copilot, Google AI, rankings, traffic, calls, leads, or revenue.",
+    note: "This is still an AI and online visibility score. It uses live search evidence, but it does not guarantee ChatGPT, Gemini, Copilot, Google AI, rankings, traffic, calls, leads, or revenue.",
     evidence,
     searchProvider: "serpapi",
     searchQueries: searchData.queries || [],
@@ -250,9 +250,9 @@ function mergeOffsiteWithSearch(result, searchData) {
       ...(result.offsiteVisibility || {}),
       evidence: [
         {
-          label: "Live search status",
+          label: "Outside-web check status",
           status: searchData.configured ? "needs-review" : "not-found",
-          detail: searchData.configured ? `SerpAPI was configured but returned no usable results. ${searchData.error || ""}` : "SERPAPI_API_KEY is not configured, so Build 7 live off-site checks did not run.",
+          detail: searchData.configured ? `The outside-web check returned no usable results. ${searchData.error || ""}` : "Outside-web checks are not enabled yet, so Google Business Profile, reviews, and trusted website mentions were not fully checked.",
         },
       ],
       searchProvider: "serpapi",
@@ -262,7 +262,7 @@ function mergeOffsiteWithSearch(result, searchData) {
     };
     result.overallAiVisibility = {
       ...(result.overallAiVisibility || {}),
-      summary: `${result.overallAiVisibility?.summary || ""} Build 7 live search was not completed for this run.`.trim(),
+      summary: `${result.overallAiVisibility?.summary || ""} Outside-web checking was not completed for this run.`.trim(),
     };
     return result;
   }
@@ -284,7 +284,7 @@ function mergeOffsiteWithSearch(result, searchData) {
   result.overallAiVisibility = {
     score: overallAiVisibilityScore,
     label: overallAiVisibilityScore >= 85 ? "Overall AI visibility verified strong" : overallAiVisibilityScore >= 70 ? "Overall AI visibility mostly ready" : overallAiVisibilityScore >= 50 ? "Overall AI visibility gaps found" : "Major overall AI visibility gaps",
-    summary: "This combines on-site readiness with live off-site/entity consistency evidence from SerpAPI search results. Off-site evidence is weighted more heavily because AI recommendations often rely on Google Business Profile, reviews, citations, awards, and brand consistency.",
+    summary: "This combines what the website says with what trusted outside websites appear to confirm. Outside proof matters because AI and search tools often rely on Google Business Profile, reviews, trusted mentions, awards, and consistent business information.",
   };
 
   const offsiteFindings = [];
@@ -295,7 +295,7 @@ function mergeOffsiteWithSearch(result, searchData) {
     offsiteFindings.push({
       title: "Live search did not confirm a Google Business Profile",
       severity: "warning",
-      category: "Off-Site AI Visibility",
+      category: "Online Reputation & AI Visibility",
       explanation: "AI/search systems often rely on local profile and review signals when recommending service businesses.",
       evidence: gbp.detail,
       fix: ["Verify the Google Business Profile exists under the same business name.", "Make sure the profile links to the website.", "Build reviews under the same entity name."],
@@ -303,9 +303,9 @@ function mergeOffsiteWithSearch(result, searchData) {
   }
   if (entity?.status === "needs-review") {
     offsiteFindings.push({
-      title: "Possible brand/entity consistency issue found in live search",
+      title: "Possible brand/business name consistency issue found in live search",
       severity: "warning",
-      category: "Off-Site AI Visibility",
+      category: "Online Reputation & AI Visibility",
       explanation: "If reviews or citations are attached to a different business name, AI tools may not connect them to the website cleanly.",
       evidence: entity.detail,
       fix: ["Consolidate public profiles under one business name.", "Use the same website, phone, and service area across profiles.", "Add sameAs schema links to official profiles."],
@@ -315,7 +315,7 @@ function mergeOffsiteWithSearch(result, searchData) {
     offsiteFindings.push({
       title: "No best-of/editorial citation confirmed in live search",
       severity: "warning",
-      category: "Off-Site AI Visibility",
+      category: "Online Reputation & AI Visibility",
       explanation: "Editorial and best-of pages can be cited by AI answer engines when users ask who to hire.",
       evidence: editorial?.detail || "No editorial result found.",
       fix: ["Pitch local best-of lists and awards.", "Build manufacturer/trade directory listings.", "Create proof-based content that makes the business easier to cite."],
@@ -398,7 +398,7 @@ function buildAiVisibilityReadiness({ industry, visibleContent, html, text, titl
     aiSignal("Entity clarity", entityScore >= 15 ? "strong" : entityScore >= 9 ? "needs-review" : "missing", entityScore >= 15 ? "Business type, location, and contact signals are clear enough for AI/search systems to understand the company." : "The site may not clearly connect business type, location, and contact details in one crawlable place.", "Make the homepage title, headline, phone, and contact page clearly identify the business, service type, and city."),
     aiSignal("Service clarity", serviceScore >= 15 ? "strong" : serviceScore >= 8 ? "needs-review" : "missing", serviceScore >= 15 ? "Specific service terms and/or service-page links were found." : `AI tools may need clearer service detail for ${industry.label.toLowerCase()} work.`, `Add crawlable service sections/pages for ${industry.serviceKeywords.slice(0, 4).join(", ")}.`),
     aiSignal("Trust and citation readiness", trustScore >= 18 ? "strong" : trustScore >= 9 ? "needs-review" : "missing", trustScore >= 18 ? "Review, credential, project, or third-party trust signals were found." : "The site may not provide enough visible proof for an AI answer to confidently describe why the company is trustworthy.", "Add review source/count, certifications, warranties, project proof, and links to trusted third-party profiles."),
-    aiSignal("Crawlable content", crawlScore >= 15 ? "strong" : crawlScore >= 8 ? "needs-review" : "missing", crawlScore >= 15 ? "The homepage appears to include enough crawlable text and support pages/signals." : "Important information may be too thin, image-based, or missing structured context.", "Add plain text service summaries, FAQ content, About/Contact links, and LocalBusiness schema where possible."),
+    aiSignal("Crawlable content", crawlScore >= 15 ? "strong" : crawlScore >= 8 ? "needs-review" : "missing", crawlScore >= 15 ? "The homepage appears to include enough website text that search and AI tools can read and support pages/signals." : "Important information may be too thin, image-based, or missing structured context.", "Add plain text service summaries, FAQ content, About/Contact links, and LocalBusiness schema where possible."),
     aiSignal("Local footprint", footprintScore >= 11 ? "strong" : footprintScore >= 6 ? "needs-review" : "missing", footprintScore >= 11 ? "Local/service-area and third-party footprint signals were found." : "AI systems may have limited external/local context for this business from the website alone.", "Add service areas, local project examples, and links to Google Business Profile, BBB, Facebook, and relevant trade/manufacturer profiles."),
   ];
 
@@ -415,7 +415,7 @@ function buildAiVisibilityReadiness({ industry, visibleContent, html, text, titl
         : "The site has meaningful AI visibility gaps. It may not give AI/search tools enough clear business, service, location, trust, and crawlability signals.",
     signals,
     gaps: gaps.slice(0, 5),
-    note: "AI Visibility Readiness does not test live rankings in ChatGPT, Gemini, Copilot, or Google AI. It checks whether the website provides the basic signals those systems can use when understanding local businesses.",
+    note: "Website AI Readiness does not test live rankings in ChatGPT, Gemini, Copilot, or Google AI. It checks whether the website provides the basic signals those systems can use when understanding local businesses.",
   };
 }
 
@@ -532,10 +532,10 @@ function buildOffsiteVisibilityReadiness({ industry, visibleContent, html, text,
       "Add LocalBusiness/ProfessionalService schema with sameAs links to official review, social, and directory profiles. Add AggregateRating/Review schema only when accurate and policy-compliant."
     ),
     signal(
-      "AI-repeatable differentiator",
+      "Clear reason to choose this company",
       hasDifferentiator ? 12 : 0,
       10,
-      "State one clear proof-based differentiator in crawlable text, such as review count, years in business, certification level, award, one-day service, emergency service, or warranty."
+      "State one clear proof-based differentiator in website text that search and AI tools can read, such as review count, years in business, certification level, award, one-day service, emergency service, or warranty."
     ),
   ];
 
@@ -546,7 +546,7 @@ function buildOffsiteVisibilityReadiness({ industry, visibleContent, html, text,
   if (!hasGoogleProfileSignal) {
     gaps.unshift("Verify or create a Google Business Profile under the exact same business name used on the website.");
   }
-  if (!gaps.length) gaps.push("Keep off-site entity signals current across Google, reviews, directories, awards, manufacturer profiles, and schema/sameAs links.");
+  if (!gaps.length) gaps.push("Keep off-site entity signals current across Google, reviews, directories, awards, manufacturer profiles, and matching profile links and behind-the-scenes website markup.");
 
   return {
     score,
@@ -554,8 +554,8 @@ function buildOffsiteVisibilityReadiness({ industry, visibleContent, html, text,
     summary: score >= 80
       ? "The website exposes several off-site/entity signals, but this still needs live search verification before calling it strong."
       : score >= 60
-        ? "Some off-site/entity signals were found on the website, but Google Business Profile, review-platform consistency, citations, awards, and schema alignment still need manual verification."
-        : "Off-site AI visibility is weak, unverified, or not exposed from the website scan. The business should verify Google Business Profile, review platforms, citations, awards, and entity consistency before expecting AI tools to confidently recommend it.",
+        ? "Some off-site/entity signals were found on the website, but Google Business Profile, review-platform consistency, citations, awards, and behind-the-scenes website markup alignment still need manual verification."
+        : "Off-site AI visibility is weak, unverified, or not exposed from the website scan. The business should verify Google Business Profile, review platforms, citations, awards, and business name consistency before expecting AI tools to confidently recommend it.",
     signals,
     gaps: gaps.slice(0, 6),
     note: "Build 6A does not run live ChatGPT, Gemini, Copilot, Google, Maps, or review-platform searches. This conservative score checks only off-site/entity signals exposed by the website and flags what must be manually verified.",
@@ -668,7 +668,7 @@ function buildPreviewFromScrape({ url, cityState, email, industryId, html, visib
     category("call", "Call Readiness", callScore, 25, hasPhone ? (!hasPhoneProminent ? "Phone was found, but not near the start of the scanned homepage content." : hasTelLink ? "Prominent phone and click-to-call found." : "Prominent phone found, but click-to-call was not confirmed.") : "Phone number not found in homepage content."),
     category("clarity", "5-Second Service Clarity", clarityScore, 20, primaryCount > 0 ? "Industry wording found." : "Main service wording was not confirmed."),
     category("trust", "Trust Proof", trustScore, 20, hasStrongReviewProof ? "Strong review proof was found." : hasBasicReviewProof || hasCertificationProof ? "Some trust proof was found, but the source/count may be limited." : "Trust proof appears thin, linked-only, or buried."),
-    category("path", "Request Path", requestScore, 15, hasBrokenCta ? "A possible broken/placeholder link was detected." : formFieldCount > 6 ? `Form may be high-friction with ${formFieldCount} fields.` : strongCtaCount > 0 ? "Strong request path language found." : "Request path has basic or soft signals."),
+    category("path", "Estimate Request Steps", requestScore, 15, hasBrokenCta ? "A possible broken/placeholder link was detected." : formFieldCount > 6 ? `Form may be high-friction with ${formFieldCount} fields.` : strongCtaCount > 0 ? "Strong request path language found." : "Request path has basic or soft signals."),
     category("seo", "Local Visibility", localSeoScore, 10, hasCity ? "City/service-area signal found." : "City/service-area signal not confirmed."),
     category("freshness", "Freshness", freshnessScore, 10, hasCurrentYear ? "Current year signal found." : hasStaleYear ? "Older dates found without a current year signal." : "Freshness signal was limited."),
   ];
@@ -708,11 +708,11 @@ function buildPreviewFromScrape({ url, cityState, email, industryId, html, visib
 
   if (hasPhone && !hasPhoneProminent && strongCtaCount > 0) {
     findings.push({
-      title: "Estimate CTA is visible, but the call path is weaker",
+      title: "Estimate button or form is visible, but the call path is weaker",
       severity: "warning",
       category: "Call Readiness",
       explanation: `The page appears to have a request/estimate action, but the phone path is not as obvious. Some ${industry.customerLabel || "visitors"} will want to call instead of filling out a form.`,
-      evidence: "Strong CTA wording was found, but the phone number was not confirmed near the top of the scanned homepage content.",
+      evidence: "Strong button or form wording was found, but the phone number was not confirmed near the top of the scanned homepage content.",
       fix: ["Place 'Call Now' beside the estimate button.", "Make the phone number click-to-call.", "Use both call and request options on mobile."],
     });
   }
@@ -734,19 +734,19 @@ function buildPreviewFromScrape({ url, cityState, email, industryId, html, visib
   }
 
   if (hasBrokenCta) {
-    findings.push({ title: "Possible broken or placeholder CTA link detected", severity: "critical", category: "Request Path", explanation: "A main action link that points nowhere can stop a ready visitor from contacting the business.", evidence: "The scan detected a placeholder link pattern such as href='#', href='', href='<>' or javascript:void(0).", fix: ["Test every button in the header and hero section.", "Send the main CTA to a real quote/contact form.", "Use a clear action such as 'Get a Free Estimate' or 'Schedule Service'."] });
+    findings.push({ title: "Possible broken or placeholder button or form link detected", severity: "critical", category: "Estimate Request Steps", explanation: "A main action link that points nowhere can stop a ready visitor from contacting the business.", evidence: "The scan detected a placeholder link pattern such as href='#', href='', href='<>' or javascript:void(0).", fix: ["Test every button in the header and hero section.", "Send the main button or form to a real quote/contact form.", "Use a clear action such as 'Get a Free Estimate' or 'Schedule Service'."] });
   } else if (strongCtaCount === 0 && softCtaCount > 0) {
-    findings.push({ title: "CTA is present but could be more specific", severity: "warning", category: "Request Path", explanation: "The page has a contact/consultation path, but the wording may be softer than a direct service request. Specific action buttons usually make the next step clearer.", evidence: "Soft CTA wording was found, but the strongest industry-specific CTA terms were not confirmed.", fix: [`Use wording like '${industry.ctaKeywords[0]}' near the top.`, "Repeat the CTA after trust proof sections.", "Tell visitors what happens after they submit."] });
+    findings.push({ title: "button or form is present but could be more specific", severity: "warning", category: "Estimate Request Steps", explanation: "The page has a contact/consultation path, but the wording may be softer than a direct service request. Specific action buttons usually make the next step clearer.", evidence: "Soft button or form wording was found, but the strongest industry-specific button or form terms were not confirmed.", fix: [`Use wording like '${industry.ctaKeywords[0]}' near the top.`, "Repeat the button or form after trust proof sections.", "Tell visitors what happens after they submit."] });
   } else if (ctaCount === 0) {
-    findings.push({ title: "No strong call-to-action found", severity: "warning", category: "Request Path", explanation: "The page should give ready-to-act visitors a clear next step, not just general information.", evidence: `No CTA terms were found from this industry list: ${industry.ctaKeywords.slice(0, 4).join(", ")}.`, fix: ["Add a clear CTA button near the top.", `Use wording like '${industry.ctaKeywords[0]}'.`, "Repeat the CTA after trust proof sections."] });
+    findings.push({ title: "No strong call-to-action found", severity: "warning", category: "Estimate Request Steps", explanation: "The page should give ready-to-act visitors a clear next step, not just general information.", evidence: `No button or form terms were found from this industry list: ${industry.ctaKeywords.slice(0, 4).join(", ")}.`, fix: ["Add a clear button or form button near the top.", `Use wording like '${industry.ctaKeywords[0]}'.`, "Repeat the button or form after trust proof sections."] });
   }
 
   if (formFieldCount > 6) {
-    findings.push({ title: "Contact form may have too much friction", severity: "warning", category: "Request Path", explanation: `The scan found ${formFieldCount} form fields. Long forms can reduce quote or service requests, especially on mobile.`, evidence: `${formFieldCount} input/select/textarea fields were found in the homepage HTML.`, fix: ["Reduce the form to 4–5 key fields.", "Ask for more detail after the first contact.", "Add a clear 'what happens next' line under the form."] });
+    findings.push({ title: "Contact form may have too much friction", severity: "warning", category: "Estimate Request Steps", explanation: `The scan found ${formFieldCount} form fields. Long forms can reduce quote or service requests, especially on mobile.`, evidence: `${formFieldCount} input/select/textarea fields were found in the homepage HTML.`, fix: ["Reduce the form to 4–5 key fields.", "Ask for more detail after the first contact.", "Add a clear 'what happens next' line under the form."] });
   }
 
   if (localSeoCount < 2) {
-    findings.push({ title: "Foundational local SEO signals may be light", severity: "warning", category: "Local Visibility", explanation: "The scan found limited local service keywords that help customers and search engines understand what you do.", evidence: `Only ${localSeoCount} foundational local visibility keyword(s) were found.`, fix: ["Add core service terms to the homepage.", "Create dedicated service pages.", "Add a short FAQ section for common local customer questions."] });
+    findings.push({ title: "Local search signals may be light", severity: "warning", category: "Local Visibility", explanation: "The scan found limited local service keywords that help customers and search engines understand what you do.", evidence: `Only ${localSeoCount} foundational local visibility keyword(s) were found.`, fix: ["Add core service terms to the homepage.", "Create dedicated service pages.", "Add a short FAQ section for common local customer questions."] });
   }
 
   if (!hasCurrentYear && hasStaleYear) {
@@ -828,7 +828,7 @@ function buildPreviewFromScrape({ url, cityState, email, industryId, html, visib
   const overallAiVisibility = {
     score: overallAiVisibilityScore,
     label: overallAiVisibilityScore >= 85 ? "Overall AI visibility verified strong" : overallAiVisibilityScore >= 70 ? "Overall AI visibility mostly ready" : overallAiVisibilityScore >= 50 ? "Overall AI visibility gaps found" : "Major overall AI visibility gaps",
-    summary: "This combines on-site readiness with conservative off-site/entity consistency signals. Off-site signals are weighted more heavily because AI recommendations often rely on Google Business Profile, reviews, third-party citations, awards, and brand consistency. Build 6A does not yet run live search/API verification.",
+    summary: "This combines on-site readiness with conservative off-site/business name consistency signals. Off-site signals are weighted more heavily because AI recommendations often rely on Google Business Profile, reviews, mentions on trusted websites, awards, and brand consistency. Build 6A does not yet run live search/API verification.",
   };
 
   return {
@@ -857,7 +857,7 @@ function buildPreviewFromScrape({ url, cityState, email, industryId, html, visib
       paidRecommendation === "recommended"
         ? "Show the locked full report offer once payments are added."
         : paidRecommendation === "manual-review"
-          ? "Run a deeper manual or Firecrawl review before charging."
+          ? "Run a deeper manual review before charging."
           : "Do not push the paid report unless a deeper scan finds more meaningful issues.",
   };
 }
@@ -876,9 +876,9 @@ function buildRulesFullReportDraft(result) {
   const offsiteActionPlan = [
     "P1 — Verify the Google Business Profile exists under the same business name, website, phone, and service area.",
     "P1 — Consolidate reviews so Google, Facebook, BBB, Angi/Yelp, and other profiles point to the same entity.",
-    "P2 — Add LocalBusiness/ProfessionalService schema with sameAs links to official profiles.",
+    "P2 — Add behind-the-scenes website markup and links to the correct official profiles.",
     "P2 — Pursue credible best-of, award, manufacturer, chamber, or trade-directory citations.",
-    "P3 — Create one clear AI-repeatable differentiator that outside sources and the website can repeat consistently.",
+    "P3 — Create one clear reason to choose this company that outside sources and the website can repeat consistently.",
   ];
 
   const topRecommendations = uniqueList([
@@ -893,7 +893,7 @@ function buildRulesFullReportDraft(result) {
       text: `${industry.label} services in ${cityState} that make it easy to call, compare, and request help.`,
     },
     {
-      label: "Primary CTA",
+      label: "Primary button or form",
       text: industry.id === "roofing" ? "Request a Free Roof Inspection" : industry.id === "plumbing" ? "Schedule Plumbing Service" : industry.id === "hvac" ? "Schedule HVAC Service" : industry.id === "landscaping" ? "Request a Free Landscaping Quote" : "Request Service",
     },
     {
@@ -901,8 +901,8 @@ function buildRulesFullReportDraft(result) {
       text: `Add a short trust line near the top: Local ${primaryService} help for ${cityState}. Include your review source/count, license or certification details, warranty or guarantee, and recent project proof when available.`,
     },
     {
-      label: "AI visibility/entity block",
-      text: `${industry.label} company serving ${cityState}. Services include ${industry.serviceKeywords.slice(0, 4).join(", ")}. Add this in crawlable text near the top of the homepage or About section.`,
+      label: "Business clarity block",
+      text: `${industry.label} company serving ${cityState}. Services include ${industry.serviceKeywords.slice(0, 4).join(", ")}. Add this in website text that search and AI tools can read near the top of the homepage or About section.`,
     },
   ];
 
@@ -918,7 +918,7 @@ function buildRulesFullReportDraft(result) {
     "Day 2: Make the main headline clearly state the service and city/service area.",
     "Day 3: Add visible review proof, star rating, testimonial, certification, or warranty proof near the first screen.",
     "Day 4: Shorten or clarify the estimate/service request path.",
-    "Day 5: Add service-area and core-service wording in crawlable text for AI/search tools.",
+    "Day 5: Add service-area and core-service wording in website text that search and AI tools can read for AI/search tools.",
     "Day 6: Add or update recent project photos, captions, or local proof.",
     "Day 7: Send the web-person checklist to whoever manages the site and track call/form clicks after changes are made.",
   ];
@@ -926,16 +926,16 @@ function buildRulesFullReportDraft(result) {
   return {
     source: "rules",
     generatedAt: new Date().toISOString(),
-    executiveSummary: `This draft report reviewed ${result.normalizedUrl || "the submitted website"} for ${industry.label.toLowerCase()} lead leaks and AI visibility readiness in ${cityState}. The preview score is ${result.score}/100 (${result.label}), the On-Site AI Readiness score is ${result.aiVisibility?.score ?? "not scored"}/100, and the Off-Site AI Visibility score is ${result.offsiteVisibility?.score ?? "not scored"}/100. The report should focus on practical fixes that help customers and AI/search tools quickly understand who the business is, what it does, where it works, why it can be trusted, and how to contact it.`,
-    aiVisibilitySummary: `${result.aiVisibility?.summary || "The site was checked for basic on-site entity, service, location, trust, crawlability, and footprint signals."} Off-site note: ${result.offsiteVisibility?.summary || "Off-site/entity consistency checks should verify Google Business Profile, review platforms, directories, awards, and schema/sameAs signals."}`,
+    executiveSummary: `This draft report reviewed ${result.normalizedUrl || "the submitted website"} for ${industry.label.toLowerCase()} lead leaks and AI and online visibility in ${cityState}. The preview score is ${result.score}/100 (${result.label}), the On-Site AI Readiness score is ${result.aiVisibility?.score ?? "not scored"}/100, and the Online Reputation & AI Visibility score is ${result.offsiteVisibility?.score ?? "not scored"}/100. The report should focus on practical fixes that help customers and AI/search tools quickly understand who the business is, what it does, where it works, why it can be trusted, and how to contact it.`,
+    aiVisibilitySummary: `${result.aiVisibility?.summary || "The site was checked for clear business name, service, location, trust, readable website text, and outside reputation signals."} Off-site note: ${result.offsiteVisibility?.summary || "Outside-web checks should verify Google Business Profile, review platforms, directories, awards, and matching official profile links."}`,
     leadLeakSummary: topFindings[0]?.explanation || "The preview did not find a critical lead leak, but the paid report should still document the highest-value improvements if the report is recommended.",
-    localSeoSummary: `The foundational local SEO review should focus on clear service/city wording, dedicated service pages, service-area proof, FAQs, current business information, and crawlable trust proof. This is not a rankings audit or backlink report.`,
+    localSeoSummary: `The local search review should focus on clear service/city wording, dedicated service pages, service-area proof, FAQs, current business information, and trust proof written on the website. This is not a rankings audit or backlink report.`,
     topRecommendations,
     copyPasteFixes,
     gbpPosts,
     sevenDayPlan: [...offsiteActionPlan, ...sevenDayPlan].slice(0, 10),
     webPersonChecklist: result.webPersonChecklist || [],
-    disclaimer: "This report is an informational website and AI visibility readiness review. It does not guarantee rankings, AI recommendations, traffic, calls, leads, or revenue.",
+    disclaimer: "This report is an informational website and AI and online visibility review. It does not guarantee rankings, AI recommendations, traffic, calls, leads, or revenue.",
   };
 }
 
@@ -1001,7 +1001,7 @@ async function buildOpenAiFullReportDraft(result) {
           {
             role: "system",
             content:
-              "You write concise, practical website conversion and AI visibility readiness reports for local service businesses. Use plain English. Do not guarantee rankings, ChatGPT visibility, traffic, calls, leads, revenue, or outcomes. Do not invent facts not supplied. Return valid JSON only.",
+              "You write concise, practical website conversion and AI and online visibility reports for local service businesses. Use plain English. Do not guarantee rankings, ChatGPT visibility, traffic, calls, leads, revenue, or outcomes. Do not invent facts not supplied. Return valid JSON only.",
           },
           {
             role: "user",
@@ -1167,7 +1167,7 @@ export default async function handler(req, res) {
     } catch (error) {
       return res.status(502).json({
         error: firecrawlConfigured
-          ? `Could not read this website with Firecrawl or the fallback fetch. ${firecrawlError ? `Firecrawl note: ${firecrawlError}` : ""}`
+          ? `Could not fully read this website with the standard or backup website reader. ${firecrawlError ? `Website reader note: ${firecrawlError}` : ""}`
           : "Could not read this website yet. Add FIRECRAWL_API_KEY in Build 2 for stronger site reading.",
       });
     }
@@ -1189,7 +1189,7 @@ export default async function handler(req, res) {
   if (screenshotUrl) {
     result.screenshotUrl = screenshotUrl;
     result.visualChecks = [
-      { label: "Homepage screenshot", status: "confirmed", note: "Firecrawl returned a rendered homepage screenshot for manual first-screen review." },
+      { label: "Homepage screenshot", status: "confirmed", note: "A homepage screenshot was captured for first-screen review." },
       ...(result.visualChecks || []).filter((check) => check.label !== "Homepage screenshot"),
     ];
   }
@@ -1198,25 +1198,25 @@ export default async function handler(req, res) {
     result.confidence = screenshotUrl ? "Firecrawl + screenshot preview" : "Firecrawl homepage preview";
     result.nextBestAction =
       result.paidRecommendation === "recommended"
-        ? "Firecrawl read the homepage and captured screenshot data when available. This preview is strong enough to show the locked full report offer once payments are added."
+        ? "The homepage was read and a screenshot was checked when available. This preview is strong enough to show whether a full report may be useful."
         : result.paidRecommendation === "manual-review"
-          ? "Firecrawl read the homepage, but a manual review is still recommended before charging."
-          : "Firecrawl read the homepage and did not find enough meaningful issues to push a paid report.";
+          ? "The homepage was read, but a manual review is still recommended before asking for payment."
+          : "The homepage was read and did not find enough meaningful issues to push a paid report.";
   } else if (scrapeSource === "basic-fetch-after-firecrawl-fallback") {
     result.confidence = "Live homepage preview";
     result.findings = [
       {
-        title: "Firecrawl was unavailable; fallback scan used",
+        title: "Limited website scan used",
         severity: "warning",
         category: "Preview Confidence",
         explanation:
-          "The app is configured for Firecrawl, but this scan fell back to the basic homepage reader. The preview may miss JavaScript-rendered content or full-page details.",
-        evidence: firecrawlError ? firecrawlError.slice(0, 220) : "Firecrawl did not return usable content.",
-        fix: ["Check the FIRECRAWL_API_KEY value in Vercel.", "Confirm the Firecrawl account has credits.", "Run the preview again before charging for a report."],
+          "The stronger website reader was unavailable, so this scan used a simpler homepage check. The preview may miss some details.",
+        evidence: firecrawlError ? firecrawlError.slice(0, 220) : "The website reader did not return usable content.",
+        fix: ["Check the website reader setup.", "Confirm the website reader account has credits.", "Run the preview again before charging for a report."],
       },
       ...result.findings,
     ].slice(0, 5);
-    result.summary = `${result.summary} Firecrawl fallback was used, so verify the result before charging.`;
+    result.summary = `${result.summary} A limited scan was used, so verify the result before charging.`;
   }
 
   result.scrapeSource = scrapeSource;
