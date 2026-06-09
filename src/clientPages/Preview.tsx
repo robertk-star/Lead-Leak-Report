@@ -331,8 +331,18 @@ export default function Preview() {
               </div>
               <div className="flex-1">
                 <div className="mb-5 rounded-lg border border-purple-100 bg-purple-50 p-4 text-sm text-[#4c1d95]">
-                  <strong>What this means:</strong> This checks whether the website exposes or links to outside signals AI/search systems can use to verify the business: Google Business Profile, review platforms, BBB/Facebook/Yelp/Angi, manufacturer directories, best-of lists, awards, schema, and sameAs links.
+                  <strong>What this means:</strong> Build 6A is conservative. This section checks whether the website exposes or links to outside signals AI/search systems can use to verify the business, but it does not yet run live Google/Maps/review-platform searches. Treat this as a manual verification checklist until Build 7 adds a search API.
                 </div>
+                {result.offsiteVisibility.gaps?.length ? (
+                  <div className="mb-5 rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-900">
+                    <p className="font-bold mb-2">Manual off-site checks needed</p>
+                    <ul className="space-y-1 list-disc pl-5">
+                      {result.offsiteVisibility.gaps.slice(0, 5).map((gap) => (
+                        <li key={gap}>{gap}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
                 <div className="grid md:grid-cols-2 gap-4">
                   {result.offsiteVisibility.signals.map((signal) => {
                     const styles = getAiSignalStyles(signal.status);
@@ -393,7 +403,7 @@ export default function Preview() {
             <h3 className="font-bold text-[#1a2332]">First-Screen / Screenshot Review</h3>
           </div>
           <p className="text-sm text-[#374151] mb-6">
-            Build 3 adds a Firecrawl screenshot handoff so the preview can be compared against what a visitor actually sees. The score is still rule-based, but this makes manual QA and future screenshot/AI review much easier.
+            Firecrawl can return a rendered homepage screenshot so the preview can be compared against what a visitor actually sees. The score is still rule-based, but this makes manual QA and future screenshot/AI review much easier.
           </p>
           <div className="grid lg:grid-cols-2 gap-6 items-start">
             <div className="rounded-lg border border-[#e5e7eb] bg-[#f9fafb] p-4">

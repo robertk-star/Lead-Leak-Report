@@ -1,4 +1,4 @@
-# Lead Leak Report — Build 6
+# Lead Leak Report — Build 6A
 
 This build is the current Next.js App Router version of Lead Leak Report.
 
@@ -29,7 +29,7 @@ This build is the current Next.js App Router version of Lead Leak Report.
 - Rule-based full report draft fallback when OpenAI is not configured
 - `robots.txt`, `sitemap.xml`, and `llms.txt` in `/public`
 
-## Build 6 additions
+## Build 6A additions
 
 Build 6 separates AI visibility into two parts:
 
@@ -41,6 +41,15 @@ It also adds an **Overall AI Visibility** score that weights off-site/entity con
 ## Important limitation
 
 This build does **not** run live ChatGPT, Gemini, Copilot, Google AI, or Google ranking tests. It is a readiness and signal check. It does not guarantee AI recommendations, rankings, traffic, calls, leads, or revenue.
+
+
+Build 6A adds:
+
+- Clear separation between **On-Site AI Readiness**, **Off-Site AI Visibility**, and **Overall AI Visibility**.
+- Conservative off-site scoring until Google Business Profile, review platforms, best-of/editorial citations, manufacturer/trade directories, schema/sameAs, and brand-name consistency are verified.
+- Manual off-site checklist in the preview UI.
+- Entity mismatch warnings when the website brand may not match off-site review/listing profiles.
+- Off-site action plan items in the full report draft.
 
 ## Vercel settings
 

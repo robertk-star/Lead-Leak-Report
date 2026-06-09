@@ -277,7 +277,7 @@ export function buildFallbackPreview(params: {
     overallAiVisibility: {
       score: 45,
       label: "Overall AI visibility not verified",
-      summary: "The fallback preview cannot combine on-site and off-site visibility because the live analyzer did not run.",
+      summary: "The fallback preview cannot combine on-site and off-site visibility because the live analyzer did not run. Build 6A keeps off-site scoring conservative until Google Business Profile, review platforms, best-of lists, and entity consistency are verified.",
     },
     visualChecks: [
       { label: "Homepage screenshot", status: "not-confirmed", note: "No screenshot was captured in fallback preview." },
@@ -291,10 +291,10 @@ export function buildFallbackPreview(params: {
 
 
 function aiVisibilityLabel(score: number) {
-  if (score >= 85) return "AI visibility ready";
-  if (score >= 70) return "AI visibility mostly ready";
-  if (score >= 50) return "AI visibility gaps found";
-  return "Major AI visibility gaps";
+  if (score >= 85) return "On-site AI readiness strong";
+  if (score >= 70) return "On-site AI readiness mostly strong";
+  if (score >= 50) return "On-site AI readiness gaps found";
+  return "Major on-site AI readiness gaps";
 }
 
 function buildFallbackAiVisibility(industry: IndustryConfig): AiVisibilityReadiness {

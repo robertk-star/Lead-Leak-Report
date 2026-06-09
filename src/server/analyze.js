@@ -28,7 +28,7 @@ const checklist = (industry) => ["Make the main phone number click-to-call on mo
 
 
 const aiVisibilityLabel = (score) => score >= 85 ? "On-site AI readiness strong" : score >= 70 ? "On-site AI readiness mostly strong" : score >= 50 ? "On-site AI readiness gaps found" : "Major on-site AI readiness gaps";
-const offsiteVisibilityLabel = (score) => score >= 85 ? "Off-site AI visibility strong" : score >= 70 ? "Off-site AI visibility mostly strong" : score >= 50 ? "Off-site AI visibility gaps found" : "Major off-site AI visibility gaps";
+const offsiteVisibilityLabel = (score) => score >= 85 ? "Off-site AI visibility verified strong" : score >= 70 ? "Off-site signals found — verify manually" : score >= 50 ? "Off-site visibility gaps found" : "Manual off-site verification needed";
 const aiSignal = (label, status, note, fix) => ({ label, status, note, fix });
 
 function buildAiVisibilityReadiness({ industry, visibleContent, html, text, title, description, city, hasCity, hasPhone, hasTelLink, primaryCount, serviceCount, urgentCount, localSeoCount, hasBasicReviewProof, hasStrongReviewProof, hasCertificationProof, hasProjectProof, hasFamilyLocalProof, hasCurrentYear, hasStaleYear }) {
@@ -179,11 +179,15 @@ function buildOffsiteVisibilityReadiness({ industry, visibleContent, html, text,
   if (hasReviewSchema) schemaScore += 5;
 
   let score = Math.min(100, gbpScore + reviewConsistencyScore + citationScore + entityScore + schemaScore);
-  // Be conservative: off-site visibility cannot score high from website copy alone unless outside signals are present.
-  if (!profilePatterns.google.test(lowerText)) score = Math.min(score, 72);
-  if (!profileHits.length) score = Math.min(score, 45);
-  if (!hasSameAs && !profilePatterns.google.test(lowerText)) score = Math.min(score, 65);
-  if (hasBrandMismatchRisk) score = Math.min(score, 58);
+  const hasGoogleProfileSignal = profilePatterns.google.test(lowerText);
+  const hasStrongLinkedEntityFootprint = hasGoogleProfileSignal && hasSameAs && profileHits.length >= 3 && (hasStrongReviewProof || hasReviewSchema);
+  // Build 6A calibration: this is NOT a live SERP/GBP/review-platform check yet.
+  // Be intentionally conservative until Build 7 adds a search API.
+  if (!hasStrongLinkedEntityFootprint) score = Math.min(score, 64);
+  if (!hasGoogleProfileSignal) score = Math.min(score, 48);
+  if (!profileHits.length) score = Math.min(score, 40);
+  if (!hasSameAs) score = Math.min(score, 55);
+  if (hasBrandMismatchRisk) score = Math.min(score, 45);
 
   const signal = (label, points, strongAt, fix, noteOverride) => ({
     label,
@@ -193,6 +197,13 @@ function buildOffsiteVisibilityReadiness({ industry, visibleContent, html, text,
   });
 
   const signals = [
+    signal(
+      "Manual off-site checks needed",
+      1,
+      99,
+      "Before using this as a true off-site AI visibility score, manually verify Google Business Profile, review platforms, best-of/editorial lists, manufacturer/trade directories, and brand-name consistency.",
+      "Build 6A is conservative: it reviews linked/exposed entity signals from the website, but it does not yet run live Google, Maps, review-platform, or AI-search queries."
+    ),
     signal(
       "Google Business Profile visibility",
       gbpScore,
@@ -234,19 +245,25 @@ function buildOffsiteVisibilityReadiness({ industry, visibleContent, html, text,
   ];
 
   const gaps = signals.filter((item) => item.status !== "strong").map((item) => item.fix);
+  if (hasBrandMismatchRisk) {
+    gaps.unshift("Possible entity mismatch: verify that review platforms, directory listings, and public profiles use the same business name as the website.");
+  }
+  if (!hasGoogleProfileSignal) {
+    gaps.unshift("Verify or create a Google Business Profile under the exact same business name used on the website.");
+  }
   if (!gaps.length) gaps.push("Keep off-site entity signals current across Google, reviews, directories, awards, manufacturer profiles, and schema/sameAs links.");
 
   return {
     score,
     label: offsiteVisibilityLabel(score),
     summary: score >= 80
-      ? "The website links or references several outside/entity signals that may help AI/search systems verify the business beyond the site itself."
+      ? "The website exposes several off-site/entity signals, but this still needs live search verification before calling it strong."
       : score >= 60
-        ? "The website has some off-site/entity signals, but the business should verify Google Business Profile, review platform consistency, citations, awards, and schema alignment."
-        : "The off-site AI visibility foundation appears weak or unverified from the website scan. The business may need stronger Google, review, citation, award, and entity-consistency signals before AI tools can confidently verify it.",
+        ? "Some off-site/entity signals were found on the website, but Google Business Profile, review-platform consistency, citations, awards, and schema alignment still need manual verification."
+        : "Off-site AI visibility is weak, unverified, or not exposed from the website scan. The business should verify Google Business Profile, review platforms, citations, awards, and entity consistency before expecting AI tools to confidently recommend it.",
     signals,
     gaps: gaps.slice(0, 6),
-    note: "This score does not run live ChatGPT, Gemini, Copilot, or Google AI ranking tests. It checks whether the website exposes or links to off-site signals that help AI/search systems verify the business entity, reviews, citations, reputation, and consistency.",
+    note: "Build 6A does not run live ChatGPT, Gemini, Copilot, Google, Maps, or review-platform searches. This conservative score checks only off-site/entity signals exposed by the website and flags what must be manually verified.",
   };
 }
 
@@ -509,11 +526,14 @@ function buildPreviewFromScrape({ url, cityState, email, industryId, html, visib
     hasFamilyLocalProof,
   });
 
-  const overallAiVisibilityScore = Math.round((aiVisibility.score * 0.45) + (offsiteVisibility.score * 0.55));
+  let overallAiVisibilityScore = Math.round((aiVisibility.score * 0.35) + (offsiteVisibility.score * 0.65));
+  // If off-site visibility is unverified/weak, do not let strong on-site content create a misleading overall score.
+  if (offsiteVisibility.score < 65) overallAiVisibilityScore = Math.min(overallAiVisibilityScore, 68);
+  if (offsiteVisibility.score < 50) overallAiVisibilityScore = Math.min(overallAiVisibilityScore, 58);
   const overallAiVisibility = {
     score: overallAiVisibilityScore,
-    label: overallAiVisibilityScore >= 85 ? "Overall AI visibility strong" : overallAiVisibilityScore >= 70 ? "Overall AI visibility mostly strong" : overallAiVisibilityScore >= 50 ? "Overall AI visibility gaps found" : "Major overall AI visibility gaps",
-    summary: "This combines on-site readiness with off-site/entity consistency signals. The off-site score is weighted more heavily because AI recommendations often rely on third-party verification, reviews, directories, awards, and brand consistency.",
+    label: overallAiVisibilityScore >= 85 ? "Overall AI visibility verified strong" : overallAiVisibilityScore >= 70 ? "Overall AI visibility mostly ready" : overallAiVisibilityScore >= 50 ? "Overall AI visibility gaps found" : "Major overall AI visibility gaps",
+    summary: "This combines on-site readiness with conservative off-site/entity consistency signals. Off-site signals are weighted more heavily because AI recommendations often rely on Google Business Profile, reviews, third-party citations, awards, and brand consistency. Build 6A does not yet run live search/API verification.",
   };
 
   return {
@@ -557,10 +577,19 @@ function buildRulesFullReportDraft(result) {
   const findings = Array.isArray(result.findings) ? result.findings : [];
   const warningFindings = findings.filter((finding) => finding.severity !== "good");
   const topFindings = warningFindings.length ? warningFindings : findings;
+  const offsiteActionPlan = [
+    "P1 — Verify the Google Business Profile exists under the same business name, website, phone, and service area.",
+    "P1 — Consolidate reviews so Google, Facebook, BBB, Angi/Yelp, and other profiles point to the same entity.",
+    "P2 — Add LocalBusiness/ProfessionalService schema with sameAs links to official profiles.",
+    "P2 — Pursue credible best-of, award, manufacturer, chamber, or trade-directory citations.",
+    "P3 — Create one clear AI-repeatable differentiator that outside sources and the website can repeat consistently.",
+  ];
+
   const topRecommendations = uniqueList([
+    ...offsiteActionPlan.slice(0, 3),
     ...topFindings.slice(0, 5).map((finding) => Array.isArray(finding.fix) ? finding.fix[0] : ""),
     ...result.localSeoGaps?.filter((gap) => !/^.+was found/i.test(gap)).slice(0, 2) || [],
-  ]).slice(0, 7);
+  ]).slice(0, 8);
 
   const copyPasteFixes = [
     {
@@ -608,7 +637,7 @@ function buildRulesFullReportDraft(result) {
     topRecommendations,
     copyPasteFixes,
     gbpPosts,
-    sevenDayPlan,
+    sevenDayPlan: [...offsiteActionPlan, ...sevenDayPlan].slice(0, 10),
     webPersonChecklist: result.webPersonChecklist || [],
     disclaimer: "This report is an informational website and AI visibility readiness review. It does not guarantee rankings, AI recommendations, traffic, calls, leads, or revenue.",
   };
