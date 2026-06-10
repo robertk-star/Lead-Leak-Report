@@ -1,18 +1,70 @@
-# Lead Leak Report — Build 7F
+# Lead Leak Report — Build 7A
 
 This build is the current Next.js App Router version of Lead Leak Report.
 
-## Build 7F additions
+## Current status
 
-Build 7F keeps the email unlock flow and tightens the free preview so it does not give away the full report value before the visitor enters an email.
+- Next.js App Router foundation
+- Public static/SSR-compatible routes for SEO and AI discovery
+- Industry landing pages:
+  - `/roofers`
+  - `/plumbers`
+  - `/electricians`
+  - `/hvac`
+  - `/landscapers`
+  - `/home-services`
+- Content pages:
+  - `/ai-visibility`
+  - `/how-it-works`
+  - `/sample-report`
+  - `/pricing`
+  - `/faq`
+- Analyzer API at `/app/api/analyze/route.ts`
+- Firecrawl homepage/screenshot support
+- Lead Leak preview score
+- On-Site AI Readiness score
+- Off-Site AI Visibility score
+- Overall AI Visibility score
+- SerpAPI live off-site search evidence when configured
+- Plain-English preview labels for service business owners
+- AI-assisted full report draft section
+- Rule-based full report draft fallback when OpenAI is not configured
+- `robots.txt`, `sitemap.xml`, and `llms.txt` in `/public`
 
-Build 7F changes:
+## Build 7A additions
 
-- The free preview still shows what was checked.
-- The first “What we found around the web” item can show details.
-- The rest of the around-the-web details are locked until email submit.
-- Off-site detail cards show “Locked” before email submit instead of showing Found/Needs Review details.
-- After the visitor enters an email, the full details show on-screen and the report email route is called.
+Build 7A keeps the Build 7 live search layer and cleans up the preview page wording for service business owners.
+
+When `SERPAPI_API_KEY` is configured, the analyzer searches Google-style results for:
+
+- `[Business Name] [City]`
+- `[Business Name] reviews`
+- `[Business Name] BBB Facebook Angi Yelp`
+- `best [industry] in [city]`
+- `[Business Name] [official domain]`
+
+The off-site score now considers live evidence for:
+
+- Google Business Profile / local-pack style signals
+- Review platforms and review consistency
+- Third-party citation footprint
+- Editorial / best-of citations
+- Manufacturer or trade directory presence
+- Brand/entity consistency
+- AI-repeatable differentiators
+
+If SerpAPI is not configured or returns no usable results, the app keeps the conservative Build 6A off-site readiness scoring and shows that live search was not completed.
+
+## Important limitation
+
+This build does **not** run live ChatGPT, Gemini, Copilot, or Google AI answer tests. It uses website data plus optional live Google search evidence. It does not guarantee AI recommendations, rankings, traffic, calls, leads, or revenue.
+
+## Vercel settings
+
+Framework Preset: Next.js
+Install Command: `pnpm install --no-frozen-lockfile`
+Build Command: `pnpm build`
+Output Directory: leave blank
 
 ## Environment variables
 
@@ -36,14 +88,15 @@ Optional model override:
 
 `OPENAI_MODEL=gpt-4o-mini`
 
-Optional for report email delivery:
-
-`RESEND_API_KEY=your_resend_api_key`
-
-Optional sender email:
-
-`REPORT_FROM_EMAIL="Lead Leak Report <reports@yourdomain.com>"`
-
 ## SQL migration needed
 
 No.
+
+## Notes
+
+This build does not add Stripe, PDFs, accounts, report storage, or share links yet. The full report draft is visible in the preview so the language and usefulness can be tested before adding payment gating.
+
+
+## Build 7A wording cleanup
+
+The preview page now avoids customer-facing tool language such as SerpAPI, Firecrawl, CTA, request path, and internal build notes. It uses service-business wording such as “Can customers easily ask for an estimate?”, “What we found around the web”, “Local Search Visibility”, and “Business name consistency.”

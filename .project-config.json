@@ -1,0 +1,35 @@
+{
+  "build_command": "pnpm run build",
+  "capabilities": [],
+  "dev_command": "pnpm run dev",
+  "env_vars": {},
+  "experiments": null,
+  "git_remote": {
+    "repo_url": "s3://vida-prod-gitrepo/webdev-git/310519663440442639/WB97EdmCjDPaSnvkvowegQ",
+    "access_key_id": "ASIAZV3A2ECZEPNNZFRC",
+    "secret_access_key": "qGmR2bsHfHn2f7eNBcJH73Bc7dtW6+9bm9A2ww11",
+    "session_token": "IQoJb3JpZ2luX2VjENX//////////wEaCXVzLWVhc3QtMSJIMEYCIQC5yjiB1xx/QkoPNflfDkzJKbHMhPWwQJMrp2MFOWZQ3QIhAKCx6ioAM6tzLf7Xmc9faPG1qVbfscZa6TNZoonsthz0Kv8DCJ7//////////wEQBBoMNjY1Mzg2MDk4ODY2IgxQb87Ueeih7klnyhAq0wOdN5lWsr4Q4quPtE0gvxXVYSZXoix7WXw5Re6/2t94AdL+vRLdgnI+ZvktXUg5VIuAOvIxUzgEq3W8ElSXCpAELF+aoJ0vL28GAa86i3JgU4Xwu5k0SCtLyAxdP3gEonWWoCz6TJAxHN7kZvq8PDEDlFO0qcbl29kVp3vzu2Rj9tfT1UOklFet/R3gpdJB2nUepycUJ1i4fCLslOqU+CK8ifBrQ05hJhtXwlrd0zW2h6Y21HOuCXUTZtVsBGyk37SaaFugAJ37iCTntVT9GxQEsyg9/vP6inR3UYNkKWQha35OZEjj+DCIiUNyd2t94UlM5yifk/2wCHwTTk7Kj/lUOT4SmNAIOtZLOzS75/WrNmDapUkHUGNDU5TfoiE3LqWql/ByB9zfwY6FVIdLMQpJuQ0C8zJ3YLSh/nqu5IPfy5hsKlhR3zU9XsmvIdN2oeb0doLQejlyumdqJmwnE4gAOxifXKiCzDzcTQXRJQhXpXcao3svl1Q2MF9RvTiOwbPJ4aJAvtoBiG0capUA1ZyCntMUnK+npN8ick1d9/qqPuMhWGYaS0gjdJ/Nt0iIgnguZ8lhnWR8Iz7/7aEGhe2ZywChMvFTfn0WRdXHZnEIlpujmjDY05XRBjqcAXZpE+IRZOPXnWZtXeZCbO/J3X475mDFlwyn4NkaowTs6Sa6N5/qU3X4w5njMMdDpQryz/erPREwUjnKWTjs4Evw64I5MrGKoBVo3H4d7W71EPSde8puc++FIMwfPLQFnZi1fEEhH/iQLWx6nRCyqE6cl1Mqv8dkRXI5PoGXKliFrwImGX9ejpBdwcbtB+DXVJV32JBOIFSI4HbsyQ==",
+    "expiration": "2026-06-08T00:53:44.000Z"
+  },
+  "name": "lead-leak-report",
+  "path": "/home/ubuntu/lead-leak-report",
+  "port": 3000,
+  "secrets": {
+    "BUILT_IN_FORGE_API_KEY": "DChFhFGd4zmFoFFv4GfVFw",
+    "BUILT_IN_FORGE_API_URL": "https://forge.manus.ai",
+    "JWT_SECRET": "4zvqoWfanRbifhYs8VbuyW",
+    "OAUTH_SERVER_URL": "https://api.manus.im",
+    "OWNER_NAME": "Robert Krebsbach",
+    "OWNER_OPEN_ID": "YeGyPokru23NetsGAvbfUJ",
+    "VITE_ANALYTICS_ENDPOINT": "https://manus-analytics.com",
+    "VITE_ANALYTICS_WEBSITE_ID": "38ed3993-dc61-4870-b236-8f317cddaa2b",
+    "VITE_APP_ID": "WB97EdmCjDPaSnvkvowegQ",
+    "VITE_APP_LOGO": "",
+    "VITE_APP_TITLE": "Lead Leak Report",
+    "VITE_FRONTEND_FORGE_API_KEY": "oGTyNsgwfSTbu4avtZoQ64",
+    "VITE_FRONTEND_FORGE_API_URL": "https://forge.manus.ai",
+    "VITE_OAUTH_PORTAL_URL": "https://manus.im"
+  },
+  "template_id": "web-static",
+  "test_command": "pnpm test"
+}

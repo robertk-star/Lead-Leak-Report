@@ -1,0 +1,4 @@
+[2026-06-08T20:09:24.076Z] 8:09:24 PM [vite] changed tsconfig file detected: /home/ubuntu/lead-leak-report/Lead-Leak-Report-main/tsconfig.json - Clearing cache and forcing full-reload to ensure TypeScript is compiled with updated config values.
+[2026-06-08T20:55:54.638Z] 8:55:54 PM [vite] changed tsconfig file detected: /home/ubuntu/lead-leak-report/tsconfig.json - Clearing cache and forcing full-reload to ensure TypeScript is compiled with updated config values.
+[2026-06-08T21:18:11.580Z] 9:18:11 PM [vite] changed tsconfig file detected: /home/ubuntu/lead-leak-report/tsconfig.json - Clearing cache and forcing full-reload to ensure TypeScript is compiled with updated config values.
+[2026-06-08T23:09:31.492Z] 11:09:31 PM [vite] changed tsconfig file detected: /home/ubuntu/lead-leak-report/tsconfig.json - Clearing cache and forcing full-reload to ensure TypeScript is compiled with updated config values.
